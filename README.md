@@ -1,8 +1,10 @@
 # claude-code-skills-codeocean
 
 Shared [Claude Code](https://claude.com/claude-code) **skills** for driving Code Ocean
-(AIND deployment) from inside a capsule. Drop this repo into any capsule at
-`code/claude-code-skills/` and Claude Code discovers every `*/SKILL.md` under it.
+(AIND deployment) from inside a capsule. Clone this repo into a capsule and **symlink
+its skills into `.claude/skills/`** (the directory Claude Code scans) — see the how-to
+below. Keeping the repo in its own folder (not *as* `.claude/skills/`) lets a capsule
+also have its own task-specific skills without them leaking into this shared repo.
 
 ## Skills
 
@@ -23,22 +25,48 @@ Each skill is a folder with a `SKILL.md` (the instructions Claude reads) plus a
 - Domain from `$CODEOCEAN_DOMAIN` or `--domain` (default: the AIND deployment,
   `https://codeocean.allenneuraldynamics.org`).
 
-## Use in a capsule
+## How to add to a capsule
 
-Recommended — add as a git submodule so every capsule shares one source of truth:
+Claude Code discovers **project skills from `<capsule>/.claude/skills/`** — so the
+skills must be reachable there. Rather than clone this repo *as* that directory (which
+would make every local skill you create show up as an untracked change in this shared
+repo), clone it into its own folder and symlink the skills in:
 
 ```bash
-git submodule add <this-repo-url> code/claude-code-skills
-git submodule update --init --recursive          # in a fresh clone of the capsule
+cd <capsule-root>                        # the dir with code/, .claude/, environment/
+REPO=code/claude-code-skills-codeocean
+
+# 1. bring in the shared repo (pick ONE):
+git clone https://github.com/jkim0731/claude-code-skills-codeocean.git "$REPO"
+#   …or pin it as a submodule (records the commit in the capsule's git):
+#   git submodule add https://github.com/jkim0731/claude-code-skills-codeocean.git "$REPO"
+
+# 2. expose each shared skill to Claude Code via a symlink:
+mkdir -p .claude/skills
+for s in "$REPO"/codeocean-*/; do
+    ln -sfn "../../$REPO/$(basename "$s")" ".claude/skills/$(basename "$s")"
+done
+
+# 3. reload / restart Claude Code so it re-scans .claude/skills (discovery runs at startup).
 ```
 
-(Or clone / symlink into `code/claude-code-skills/`.) To update the skills everywhere
-later: `git -C code/claude-code-skills pull` and commit the new submodule pointer.
+### Capsule-specific (local) skills
+Put them as **real folders directly in `.claude/skills/`** (e.g.
+`.claude/skills/my-task-skill/SKILL.md`). They live outside `$REPO`, so this shared
+repo's `git status` never sees them and they are never committed here — only the
+`codeocean-*` symlinks point back into the repo.
+
+### Updating the shared skills later
+```bash
+git -C code/claude-code-skills-codeocean pull          # plain clone
+# or, if a submodule:  git submodule update --remote code/claude-code-skills-codeocean
+```
+The symlinks pick up the new content automatically; no re-linking needed.
 
 ## Quick reference
 
 ```bash
-S=code/claude-code-skills
+S=code/claude-code-skills-codeocean
 python $S/codeocean-data-assets/scripts/co_data_assets.py attach --asset <id>
 python $S/codeocean-run-capture/scripts/co_run_capture.py run --capsule-id <id> --data-asset <id>[:mount] --wait --capture --result-name <name> --tag <t>
 python $S/codeocean-app-panel/scripts/check_app_panel.py <capsule_dir>
