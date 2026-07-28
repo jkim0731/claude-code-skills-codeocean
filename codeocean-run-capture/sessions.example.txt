@@ -1,0 +1,5 @@
+# One session data-asset NAME per line. Blank lines and # comments are ignored.
+# These names are resolved to asset ids via search at run time.
+multiplane-ophys_779891_2025-03-21_14-14-28
+multiplane-ophys_767022_2025-03-04_08-51-00
+# multiplane-ophys_782149_2025-04-15_09-36-40   # (commented out = skipped)

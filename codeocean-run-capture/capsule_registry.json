@@ -1,0 +1,1973 @@
+{
+  "source": "/root/capsule/code/CO_capsule_infos_260723.xlsx",
+  "n_capsules": 45,
+  "n_monitors": 7,
+  "capsules": [
+    {
+      "name": "Claude Code - anything",
+      "id": "6cd446a6-0d1f-4235-b929-db352bcfbc4a",
+      "type": "base",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for running claude code in ubuntu"
+    },
+    {
+      "name": "Claude Code ubuntu base - CUDA",
+      "id": "99ebc741-fca8-4d1f-80fe-694f9596dfc8",
+      "type": "base",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for running claude code in ubuntu - with CUDA"
+    },
+    {
+      "name": "DocDB and CO query",
+      "id": "ff24db9d-8127-4e08-a3f4-14ae24d272cd",
+      "type": "regular use",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Querying data from CO or using docDB"
+    },
+    {
+      "name": "quick check capsule - Jinho",
+      "id": "48474334-8e64-44d8-a0ee-dd814f2b76c1",
+      "type": "regular use",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "VSCode capsue to quickly check something"
+    },
+    {
+      "name": "dff baseline dev - Claude Code",
+      "id": "a5950e60-5652-4edb-8ce1-c8ad8933bc9a",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/dff_baseline_search",
+      "note": "Developing dff baseline for inhibitory neurons"
+    },
+    {
+      "name": "AIND-ophys-mFISH-GLM",
+      "id": "72c5a62e-14b3-428b-ac2a-1eccbdc4cce3",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/AIND-ophys-mFISH-GLM",
+      "note": "GLM - not yet implemented as pipeline (initial_dev branch)"
+    },
+    {
+      "name": "dff baseline QC (tri-exp tukey's biweight IRLS)",
+      "id": "764b1258-230c-4241-a129-e4a32ea5e66e",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Manual QC for dff baseline"
+    },
+    {
+      "name": "CPSAM-test",
+      "id": "c8ba4c67-2823-41f4-a928-7b5a3c89357a",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": null
+    },
+    {
+      "name": "3D FISH ROI-quality classifier",
+      "id": "ce67ff73-8963-4eed-ade8-4d3d5248a3f5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "HCR-ROI-label",
+      "tags": [
+        "HCR-ROI-label"
+      ],
+      "required_data_type": "HCR processed (R1)",
+      "pre_attached_name": "model_3D-HCR-ROI_LGBM_4-class_2026-06-19_14-26-00",
+      "pre_attached_id": "60273109-23bc-4ed9-9cae-2ce601bb54ee",
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-classifier",
+      "note": "HCR ROI classifier - the model can change (from 3D HCR ROI-quality classifier training)"
+    },
+    {
+      "name": "3D FISH ROI-quality labeling",
+      "id": "b367e196-440d-4ae7-b9c1-44a32afee5d8",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "derived",
+        "HCR-ROI-labeling"
+      ],
+      "required_data_type": "HCR processed (R1); HCR-ROI-label",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-labeling",
+      "note": "Manual labeling HCR ROIs; requires labeled data"
+    },
+    {
+      "name": "3D FISH ROI-quality classifier training",
+      "id": "9022c7ed-e409-4ae4-9bb3-1392ff6d6db5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "model",
+        "HCR-ROI-classification"
+      ],
+      "required_data_type": "HCR-ROI-labeling",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-classifier-training",
+      "note": "Training a model for ROI classifier; Mlflow"
+    },
+    {
+      "name": "2p-3DFISH automated coregistration",
+      "id": "9c979dd5-5516-4c8f-8075-cc1d1ae74568",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "2p-3DFISH-autocoreg",
+      "tags": [
+        "2p-3DFISH-autocoreg"
+      ],
+      "required_data_type": "HCR processed (R1); HCR-ROI-label; cortical-zstack-registration; cortical-zstack-segmentation",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-2p-3DFISH-autocoreg",
+      "note": "Running automatic co-registration between 2p czstack and 3D FISH and generate pre_coreg_table.csv"
+    },
+    {
+      "name": "2p-3DFISH autocoreg QC",
+      "id": "8935ac9e-7c9c-474a-ab30-e2cb8af7c341",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "2p-3DFISH-autocoreg-qced",
+      "tags": [
+        "2p-3DFISH-autocoreg-qced"
+      ],
+      "required_data_type": "2p-3DFISH-autocoreg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/interactive-capsule-2p-3DFISH-autocoreg-QC",
+      "note": "Manually QC automatic coreg results and generate coreg_table.csv"
+    },
+    {
+      "name": "ophys-Xenium autoCoreg dev",
+      "id": "1db12cc3-efe7-4929-abd1-02ff6475e97d",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Developing auto-coreg between 2p zstack and Xenium"
+    },
+    {
+      "name": "Residual interaction dev",
+      "id": "c4b4b96e-a217-4b58-b1fd-1383c15e1bc4",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/residual-interaction-dev",
+      "note": "Developing functional interaction analysis - residual interaction"
+    },
+    {
+      "name": "Single cell response characteristics",
+      "id": "15d8e68a-ebac-43b8-a923-6d45736d553a",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Developing single cell response characteristics"
+    },
+    {
+      "name": "Jinho_base - VSCode python 3.11 CO4.3 (260309)",
+      "id": "de66dd7b-6723-4350-a9f4-d63a80ffce0d",
+      "type": "base",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base capsule for VSCode"
+    },
+    {
+      "name": "Jinho's Copy of ROICaT Cross-session Matching",
+      "id": "0f51d117-39dc-4c27-a62a-965b4216a32e",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "ROICat",
+      "tags": [
+        "ROICat"
+      ],
+      "required_data_type": "all processed ophys data assets from one mouse",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Running ROICaT for cross-session matching"
+    },
+    {
+      "name": "Single cell z-drift QC",
+      "id": "93fc2a62-ed5e-42ef-80fa-901bf4bf1f34",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "single-cell-zdrift-qc",
+      "tags": [
+        "single-cell-zdrift-qc"
+      ],
+      "required_data_type": "ophys processed data asset (single session)",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/single-cell-zdrift-qc",
+      "note": "Single cell z-drift QC"
+    },
+    {
+      "name": "ophys-mFISH auto coreg dev - Claude Code v0.2 - cpsam",
+      "id": "e4062333-2d71-4ae5-a52e-2e5b3926717d",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/2p-hcr-autocoreg/tree/cpsam",
+      "note": "Developing cellpose-SAM for HCR ROI segmentation (failed to improve)"
+    },
+    {
+      "name": "GCaMP_expression_comparison_drifting_gratings - Main",
+      "id": "1d88d40d-48f3-4ea3-becc-164e6d9a02bc",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analysis capsule for GCaMP Tg characterization"
+    },
+    {
+      "name": "Copy of Xenium_Pipeline - Capsule 9.1",
+      "id": "795194c7-5681-4252-82c0-aeb19f45eb82",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Copy of Omid's capsule 9.1 for xenium coreg (for xenium auto-coreg dev)"
+    },
+    {
+      "name": "ophys-zstack-segmentation",
+      "id": "0a174d03-4330-4f76-a76c-c56cca4293f0",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "cortical-zstack-segmentation",
+      "tags": [
+        "cortical-zstack-segmentation"
+      ],
+      "required_data_type": "cortical-zstack-registration",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-segmentation",
+      "note": "Cortical z-stack segmentation (cpsam branch)"
+    },
+    {
+      "name": "(old) CTL conditioned mean responses",
+      "id": "c6170692-10c0-4ae2-b734-db273c9dd5d7",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "conditioned-mean-response",
+      "tags": [
+        "conditioned-mean-response"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": "vb_image_dictionaries",
+      "pre_attached_id": "a5827c34-40c5-42e9-b313-177375808914",
+      "git": null,
+      "note": "Conditioned mean responses"
+    },
+    {
+      "name": "CTL conditioned mean responses",
+      "id": "bdf4b550-6bca-49af-a7c0-9587bbcfac6a+F32",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "conditioned-mean-response",
+      "tags": [
+        "conditioned-mean-response"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": "vb_image_dictionaries",
+      "pre_attached_id": "a5827c34-40c5-42e9-b313-177375808914",
+      "git": "https://github.com/AllenNeuralDynamics/CTL-conditioned-mean-response",
+      "note": "Conditioned mean responses"
+    },
+    {
+      "name": "ophys-zstack-registration",
+      "id": "c975fe83-f91d-457e-9e28-596e1e551790",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "cortical-zstack-registration",
+      "tags": [
+        "cortical-zstack-registration"
+      ],
+      "required_data_type": "ophys processed data asset with cortical z-stack",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-registration",
+      "note": "Cortical z-stack registration - needs update for expansion across plane-to-plane registration"
+    },
+    {
+      "name": "ophys-zstack-to-fov",
+      "id": "feea9925-bb8d-4c32-803f-d67798ca792e",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "CTL-czstack-to-fov",
+      "tags": [
+        "ctl-czstack-to-fov"
+      ],
+      "required_data_type": "ophys processed data; cortical-zstack-reg; cortical-zstack-seg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-to-fov",
+      "note": null
+    },
+    {
+      "name": "coreg-id-mapping with napari",
+      "id": "b04ba196-fdd7-4199-a15a-84e8508b0014",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "ctl-coreg-id-mapping"
+      ],
+      "required_data_type": "ROICat; all ophys processed assets; CTL-czstack-to-fov; czstack-hcr-coreg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Generating coregistration id mapping for FOV ROI, ROICaT ID, czstack ROI ID, and EASI-FISH ROI ID"
+    },
+    {
+      "name": "coreg-id-mapping",
+      "id": "04969519-db4a-41a7-a48b-9649a4b576fe",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "ctl-coreg-id-mapping"
+      ],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": null
+    },
+    {
+      "name": "CTL session processing QC",
+      "id": "576ee468-3049-4001-8ae6-4d7c944f4dd5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "ctl-session-qc",
+      "tags": [
+        "ctl-session-qc"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Generating session QC plot for activity heatmap and behavior"
+    },
+    {
+      "name": "Jinho_base - ubuntu for visualization tools, CO4.3 (260309)",
+      "id": "33899f54-23fb-4b69-a2db-bb31f1067eee",
+      "type": "base",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for ubuntu workstation - for visualization (e.g., napari, fiji)"
+    },
+    {
+      "name": "260209 single cell z-drift metric dev (ubuntu)",
+      "id": "47821454-d055-4631-a7e7-8fd6820afaa8",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Dev capsule for single cell z-drift QC"
+    },
+    {
+      "name": "260128 FOV size comparison",
+      "id": "de045178-ef8e-47ef-8de8-02553cd0e860",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analyzing FOV comparison (to increase FOV size); done; decided to increase from 400x400 to 512x512"
+    },
+    {
+      "name": "260126_stim_timing_comparison",
+      "id": "dd5efb4b-f785-4b8f-b4ed-b35499ddf67b",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Comparing different stim timing calculation protocols; done; comb method is the best"
+    },
+    {
+      "name": "Jinho's Copy of omFISH - Manual Co-registration",
+      "id": "821ff866-cfdb-47bf-be44-469cd153aa11",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Manual co-registration between czstack and 3D FISH"
+    },
+    {
+      "name": "Jinho's Copy of aind-capsule-eye-tracking",
+      "id": "961a643b-e392-4939-bfdf-1c5d01be1e09",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "dlc-eye",
+      "tags": [
+        "dlc-eye"
+      ],
+      "required_data_type": "ophys raw data",
+      "pre_attached_name": "universal_eye_tracking-peterl-2019-07-10",
+      "pre_attached_id": "05529cfc-23fe-4ead-9490-71763e9f7c01",
+      "git": "https://github.com/AllenNeuralDynamics/Jinho-copy_aind-capsule-eye-tracking",
+      "note": "DLC for pupil tracking (copy from Ben's capsule); git and capsule not linked (git export issue - going to be archived soon; just for reference purposes)"
+    },
+    {
+      "name": "local zstack ophys-zstack-segmentation",
+      "id": "6370ddcf-5437-49de-8474-a83b0f910c54",
+      "type": "capsule",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": "ophys processed data",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Local z-stack segmentation (stale)"
+    },
+    {
+      "name": "Online motion correction analysis",
+      "id": "466fc6e0-92cd-4e9f-b8f0-bcd1c65bb413",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analyzing online motion correction"
+    },
+    {
+      "name": "CTL coreg-id-mapping",
+      "id": "7401096e-fee4-4d50-a715-feec3ebacc49",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "coreg-id-mapping",
+      "tags": [
+        "coreg-id-mapping"
+      ],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-coreg-id-mapping",
+      "note": null
+    },
+    {
+      "name": "aind-ophys-decrosstalk-roi-images",
+      "id": "e31d29f8-7eee-446b-8f0a-2f027fe6f39b",
+      "type": "production",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/aind-ophys-decrosstalk-roi-images",
+      "note": null
+    },
+    {
+      "name": "CTL-metadata-fix-1.4",
+      "id": "f8b70600-5d94-41e8-a57b-ed4e4a1c03d7",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-metadata-fix-1.4",
+      "note": null
+    },
+    {
+      "name": "CTL-HCR-cell-gene-tables",
+      "id": "bf092a8a-8106-4b92-9ca3-5c9e0df23d47",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-HCR-cell-gene-tables",
+      "note": null
+    },
+    {
+      "name": "lightningPose eye tracking training",
+      "id": "3d9b47c2-25dc-483b-9306-5a8d58f38888",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/lightningPose-eye-tracking-training",
+      "note": null
+    },
+    {
+      "name": "lightningPose eye tracking",
+      "id": "54a4898c-01a0-4710-be33-4a528bc8b4b4",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "lp-eye",
+      "tags": [
+        "lp-eye"
+      ],
+      "required_data_type": "ophys raw data",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/lightningPose-eye-tracking",
+      "note": null
+    },
+    {
+      "name": "Multiscope decrosstalk QC (gui app)",
+      "id": "d9a46471-372d-4e54-a77a-29aeca6b04d2",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/multiscope-decrosstalk-qc-using-gui-app",
+      "note": "Using https://github.com/jkim0731/multiscope-decrosstalk-qc-app"
+    }
+  ],
+  "monitors": [
+    {
+      "name": "Jinho_pipeline_monitor_2p-3DFISH-autocoreg",
+      "id": "efa9a7b1-f53a-4c82-833e-9b7cec69570a",
+      "type": "pipeline-monitor",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/Jinho_pipeline-monitor_2p-3DFISH-autocoreg",
+      "note": null
+    },
+    {
+      "name": "Jinho_pipeline-monitor_any-capsule_session-level",
+      "id": "82332b1e-a1a0-4cdd-a190-0bcee3510165",
+      "type": "pipeline-monitor",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/Jinho_pipeline-monitor_any-capsule_session-level",
+      "note": "Pipeline monitoring (attach, run, gather) for anything in session level (ophys only for now)"
+    },
+    {
+      "name": "Jinho_pipeline_monitor_HCR-ROI-classifier",
+      "id": "930dd825-835c-4094-a174-c0d1c26a3df4",
+      "type": "pipeline-monitor",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/Jinho_pipeline-monitor_HCR-ROI-classifier",
+      "note": "Pipeline monitoring (attach, run, gather) for HCR ROI labeling (using the classifier)"
+    },
+    {
+      "name": "Jinho_pipeline_monitor_ROICat",
+      "id": "d6c4c877-9755-4837-9322-3cd9d562ad8b",
+      "type": "pipeline-monitor",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Pipeline monitoring (attach, run, gather) for ROICaT (cross-session level)"
+    },
+    {
+      "name": "Jinho_pipeline_monitor_ophs-zstack-to-fov",
+      "id": "dd06e50f-8db5-4c1f-82b0-964a639a63d4",
+      "type": "pipeline-monitor",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/Jinho_pipeline_monitor_ophys-zstack-to-fov",
+      "note": "For old one"
+    },
+    {
+      "name": "Jinho-pipeline-monitor_coreg-id-mapping",
+      "id": "dd06e50f-8db5-4c1f-82b0-964a639a63d4",
+      "type": "pipeline-monitor",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/Jinho-pipeline-monitor_coreg-id-mapping",
+      "note": null
+    },
+    {
+      "name": "Jinho-pipeline-monitor_metadata-fix-1.4_from-combined-data-assets",
+      "id": "d325c90e-cd0f-491b-9d49-b0acc5eb37b3",
+      "type": "pipeline-monitor",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/Jinho-pipeline-monitor_metadata-fix-1.4_from-combined-data-assets",
+      "note": null
+    }
+  ],
+  "index_by_id": {
+    "6cd446a6-0d1f-4235-b929-db352bcfbc4a": {
+      "name": "Claude Code - anything",
+      "id": "6cd446a6-0d1f-4235-b929-db352bcfbc4a",
+      "type": "base",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for running claude code in ubuntu"
+    },
+    "99ebc741-fca8-4d1f-80fe-694f9596dfc8": {
+      "name": "Claude Code ubuntu base - CUDA",
+      "id": "99ebc741-fca8-4d1f-80fe-694f9596dfc8",
+      "type": "base",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for running claude code in ubuntu - with CUDA"
+    },
+    "ff24db9d-8127-4e08-a3f4-14ae24d272cd": {
+      "name": "DocDB and CO query",
+      "id": "ff24db9d-8127-4e08-a3f4-14ae24d272cd",
+      "type": "regular use",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Querying data from CO or using docDB"
+    },
+    "48474334-8e64-44d8-a0ee-dd814f2b76c1": {
+      "name": "quick check capsule - Jinho",
+      "id": "48474334-8e64-44d8-a0ee-dd814f2b76c1",
+      "type": "regular use",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "VSCode capsue to quickly check something"
+    },
+    "a5950e60-5652-4edb-8ce1-c8ad8933bc9a": {
+      "name": "dff baseline dev - Claude Code",
+      "id": "a5950e60-5652-4edb-8ce1-c8ad8933bc9a",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/dff_baseline_search",
+      "note": "Developing dff baseline for inhibitory neurons"
+    },
+    "72c5a62e-14b3-428b-ac2a-1eccbdc4cce3": {
+      "name": "AIND-ophys-mFISH-GLM",
+      "id": "72c5a62e-14b3-428b-ac2a-1eccbdc4cce3",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/AIND-ophys-mFISH-GLM",
+      "note": "GLM - not yet implemented as pipeline (initial_dev branch)"
+    },
+    "764b1258-230c-4241-a129-e4a32ea5e66e": {
+      "name": "dff baseline QC (tri-exp tukey's biweight IRLS)",
+      "id": "764b1258-230c-4241-a129-e4a32ea5e66e",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Manual QC for dff baseline"
+    },
+    "c8ba4c67-2823-41f4-a928-7b5a3c89357a": {
+      "name": "CPSAM-test",
+      "id": "c8ba4c67-2823-41f4-a928-7b5a3c89357a",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": null
+    },
+    "ce67ff73-8963-4eed-ade8-4d3d5248a3f5": {
+      "name": "3D FISH ROI-quality classifier",
+      "id": "ce67ff73-8963-4eed-ade8-4d3d5248a3f5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "HCR-ROI-label",
+      "tags": [
+        "HCR-ROI-label"
+      ],
+      "required_data_type": "HCR processed (R1)",
+      "pre_attached_name": "model_3D-HCR-ROI_LGBM_4-class_2026-06-19_14-26-00",
+      "pre_attached_id": "60273109-23bc-4ed9-9cae-2ce601bb54ee",
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-classifier",
+      "note": "HCR ROI classifier - the model can change (from 3D HCR ROI-quality classifier training)"
+    },
+    "b367e196-440d-4ae7-b9c1-44a32afee5d8": {
+      "name": "3D FISH ROI-quality labeling",
+      "id": "b367e196-440d-4ae7-b9c1-44a32afee5d8",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "derived",
+        "HCR-ROI-labeling"
+      ],
+      "required_data_type": "HCR processed (R1); HCR-ROI-label",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-labeling",
+      "note": "Manual labeling HCR ROIs; requires labeled data"
+    },
+    "9022c7ed-e409-4ae4-9bb3-1392ff6d6db5": {
+      "name": "3D FISH ROI-quality classifier training",
+      "id": "9022c7ed-e409-4ae4-9bb3-1392ff6d6db5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "model",
+        "HCR-ROI-classification"
+      ],
+      "required_data_type": "HCR-ROI-labeling",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-classifier-training",
+      "note": "Training a model for ROI classifier; Mlflow"
+    },
+    "9c979dd5-5516-4c8f-8075-cc1d1ae74568": {
+      "name": "2p-3DFISH automated coregistration",
+      "id": "9c979dd5-5516-4c8f-8075-cc1d1ae74568",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "2p-3DFISH-autocoreg",
+      "tags": [
+        "2p-3DFISH-autocoreg"
+      ],
+      "required_data_type": "HCR processed (R1); HCR-ROI-label; cortical-zstack-registration; cortical-zstack-segmentation",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-2p-3DFISH-autocoreg",
+      "note": "Running automatic co-registration between 2p czstack and 3D FISH and generate pre_coreg_table.csv"
+    },
+    "8935ac9e-7c9c-474a-ab30-e2cb8af7c341": {
+      "name": "2p-3DFISH autocoreg QC",
+      "id": "8935ac9e-7c9c-474a-ab30-e2cb8af7c341",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "2p-3DFISH-autocoreg-qced",
+      "tags": [
+        "2p-3DFISH-autocoreg-qced"
+      ],
+      "required_data_type": "2p-3DFISH-autocoreg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/interactive-capsule-2p-3DFISH-autocoreg-QC",
+      "note": "Manually QC automatic coreg results and generate coreg_table.csv"
+    },
+    "1db12cc3-efe7-4929-abd1-02ff6475e97d": {
+      "name": "ophys-Xenium autoCoreg dev",
+      "id": "1db12cc3-efe7-4929-abd1-02ff6475e97d",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Developing auto-coreg between 2p zstack and Xenium"
+    },
+    "c4b4b96e-a217-4b58-b1fd-1383c15e1bc4": {
+      "name": "Residual interaction dev",
+      "id": "c4b4b96e-a217-4b58-b1fd-1383c15e1bc4",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/residual-interaction-dev",
+      "note": "Developing functional interaction analysis - residual interaction"
+    },
+    "15d8e68a-ebac-43b8-a923-6d45736d553a": {
+      "name": "Single cell response characteristics",
+      "id": "15d8e68a-ebac-43b8-a923-6d45736d553a",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Developing single cell response characteristics"
+    },
+    "de66dd7b-6723-4350-a9f4-d63a80ffce0d": {
+      "name": "Jinho_base - VSCode python 3.11 CO4.3 (260309)",
+      "id": "de66dd7b-6723-4350-a9f4-d63a80ffce0d",
+      "type": "base",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base capsule for VSCode"
+    },
+    "0f51d117-39dc-4c27-a62a-965b4216a32e": {
+      "name": "Jinho's Copy of ROICaT Cross-session Matching",
+      "id": "0f51d117-39dc-4c27-a62a-965b4216a32e",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "ROICat",
+      "tags": [
+        "ROICat"
+      ],
+      "required_data_type": "all processed ophys data assets from one mouse",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Running ROICaT for cross-session matching"
+    },
+    "93fc2a62-ed5e-42ef-80fa-901bf4bf1f34": {
+      "name": "Single cell z-drift QC",
+      "id": "93fc2a62-ed5e-42ef-80fa-901bf4bf1f34",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "single-cell-zdrift-qc",
+      "tags": [
+        "single-cell-zdrift-qc"
+      ],
+      "required_data_type": "ophys processed data asset (single session)",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/single-cell-zdrift-qc",
+      "note": "Single cell z-drift QC"
+    },
+    "e4062333-2d71-4ae5-a52e-2e5b3926717d": {
+      "name": "ophys-mFISH auto coreg dev - Claude Code v0.2 - cpsam",
+      "id": "e4062333-2d71-4ae5-a52e-2e5b3926717d",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/2p-hcr-autocoreg/tree/cpsam",
+      "note": "Developing cellpose-SAM for HCR ROI segmentation (failed to improve)"
+    },
+    "1d88d40d-48f3-4ea3-becc-164e6d9a02bc": {
+      "name": "GCaMP_expression_comparison_drifting_gratings - Main",
+      "id": "1d88d40d-48f3-4ea3-becc-164e6d9a02bc",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analysis capsule for GCaMP Tg characterization"
+    },
+    "795194c7-5681-4252-82c0-aeb19f45eb82": {
+      "name": "Copy of Xenium_Pipeline - Capsule 9.1",
+      "id": "795194c7-5681-4252-82c0-aeb19f45eb82",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Copy of Omid's capsule 9.1 for xenium coreg (for xenium auto-coreg dev)"
+    },
+    "0a174d03-4330-4f76-a76c-c56cca4293f0": {
+      "name": "ophys-zstack-segmentation",
+      "id": "0a174d03-4330-4f76-a76c-c56cca4293f0",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "cortical-zstack-segmentation",
+      "tags": [
+        "cortical-zstack-segmentation"
+      ],
+      "required_data_type": "cortical-zstack-registration",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-segmentation",
+      "note": "Cortical z-stack segmentation (cpsam branch)"
+    },
+    "c6170692-10c0-4ae2-b734-db273c9dd5d7": {
+      "name": "(old) CTL conditioned mean responses",
+      "id": "c6170692-10c0-4ae2-b734-db273c9dd5d7",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "conditioned-mean-response",
+      "tags": [
+        "conditioned-mean-response"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": "vb_image_dictionaries",
+      "pre_attached_id": "a5827c34-40c5-42e9-b313-177375808914",
+      "git": null,
+      "note": "Conditioned mean responses"
+    },
+    "bdf4b550-6bca-49af-a7c0-9587bbcfac6a+F32": {
+      "name": "CTL conditioned mean responses",
+      "id": "bdf4b550-6bca-49af-a7c0-9587bbcfac6a+F32",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "conditioned-mean-response",
+      "tags": [
+        "conditioned-mean-response"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": "vb_image_dictionaries",
+      "pre_attached_id": "a5827c34-40c5-42e9-b313-177375808914",
+      "git": "https://github.com/AllenNeuralDynamics/CTL-conditioned-mean-response",
+      "note": "Conditioned mean responses"
+    },
+    "c975fe83-f91d-457e-9e28-596e1e551790": {
+      "name": "ophys-zstack-registration",
+      "id": "c975fe83-f91d-457e-9e28-596e1e551790",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "cortical-zstack-registration",
+      "tags": [
+        "cortical-zstack-registration"
+      ],
+      "required_data_type": "ophys processed data asset with cortical z-stack",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-registration",
+      "note": "Cortical z-stack registration - needs update for expansion across plane-to-plane registration"
+    },
+    "feea9925-bb8d-4c32-803f-d67798ca792e": {
+      "name": "ophys-zstack-to-fov",
+      "id": "feea9925-bb8d-4c32-803f-d67798ca792e",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "CTL-czstack-to-fov",
+      "tags": [
+        "ctl-czstack-to-fov"
+      ],
+      "required_data_type": "ophys processed data; cortical-zstack-reg; cortical-zstack-seg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-to-fov",
+      "note": null
+    },
+    "b04ba196-fdd7-4199-a15a-84e8508b0014": {
+      "name": "coreg-id-mapping with napari",
+      "id": "b04ba196-fdd7-4199-a15a-84e8508b0014",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "ctl-coreg-id-mapping"
+      ],
+      "required_data_type": "ROICat; all ophys processed assets; CTL-czstack-to-fov; czstack-hcr-coreg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Generating coregistration id mapping for FOV ROI, ROICaT ID, czstack ROI ID, and EASI-FISH ROI ID"
+    },
+    "04969519-db4a-41a7-a48b-9649a4b576fe": {
+      "name": "coreg-id-mapping",
+      "id": "04969519-db4a-41a7-a48b-9649a4b576fe",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "ctl-coreg-id-mapping"
+      ],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": null
+    },
+    "576ee468-3049-4001-8ae6-4d7c944f4dd5": {
+      "name": "CTL session processing QC",
+      "id": "576ee468-3049-4001-8ae6-4d7c944f4dd5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "ctl-session-qc",
+      "tags": [
+        "ctl-session-qc"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Generating session QC plot for activity heatmap and behavior"
+    },
+    "33899f54-23fb-4b69-a2db-bb31f1067eee": {
+      "name": "Jinho_base - ubuntu for visualization tools, CO4.3 (260309)",
+      "id": "33899f54-23fb-4b69-a2db-bb31f1067eee",
+      "type": "base",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for ubuntu workstation - for visualization (e.g., napari, fiji)"
+    },
+    "47821454-d055-4631-a7e7-8fd6820afaa8": {
+      "name": "260209 single cell z-drift metric dev (ubuntu)",
+      "id": "47821454-d055-4631-a7e7-8fd6820afaa8",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Dev capsule for single cell z-drift QC"
+    },
+    "de045178-ef8e-47ef-8de8-02553cd0e860": {
+      "name": "260128 FOV size comparison",
+      "id": "de045178-ef8e-47ef-8de8-02553cd0e860",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analyzing FOV comparison (to increase FOV size); done; decided to increase from 400x400 to 512x512"
+    },
+    "dd5efb4b-f785-4b8f-b4ed-b35499ddf67b": {
+      "name": "260126_stim_timing_comparison",
+      "id": "dd5efb4b-f785-4b8f-b4ed-b35499ddf67b",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Comparing different stim timing calculation protocols; done; comb method is the best"
+    },
+    "821ff866-cfdb-47bf-be44-469cd153aa11": {
+      "name": "Jinho's Copy of omFISH - Manual Co-registration",
+      "id": "821ff866-cfdb-47bf-be44-469cd153aa11",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Manual co-registration between czstack and 3D FISH"
+    },
+    "961a643b-e392-4939-bfdf-1c5d01be1e09": {
+      "name": "Jinho's Copy of aind-capsule-eye-tracking",
+      "id": "961a643b-e392-4939-bfdf-1c5d01be1e09",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "dlc-eye",
+      "tags": [
+        "dlc-eye"
+      ],
+      "required_data_type": "ophys raw data",
+      "pre_attached_name": "universal_eye_tracking-peterl-2019-07-10",
+      "pre_attached_id": "05529cfc-23fe-4ead-9490-71763e9f7c01",
+      "git": "https://github.com/AllenNeuralDynamics/Jinho-copy_aind-capsule-eye-tracking",
+      "note": "DLC for pupil tracking (copy from Ben's capsule); git and capsule not linked (git export issue - going to be archived soon; just for reference purposes)"
+    },
+    "6370ddcf-5437-49de-8474-a83b0f910c54": {
+      "name": "local zstack ophys-zstack-segmentation",
+      "id": "6370ddcf-5437-49de-8474-a83b0f910c54",
+      "type": "capsule",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": "ophys processed data",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Local z-stack segmentation (stale)"
+    },
+    "466fc6e0-92cd-4e9f-b8f0-bcd1c65bb413": {
+      "name": "Online motion correction analysis",
+      "id": "466fc6e0-92cd-4e9f-b8f0-bcd1c65bb413",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analyzing online motion correction"
+    },
+    "7401096e-fee4-4d50-a715-feec3ebacc49": {
+      "name": "CTL coreg-id-mapping",
+      "id": "7401096e-fee4-4d50-a715-feec3ebacc49",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "coreg-id-mapping",
+      "tags": [
+        "coreg-id-mapping"
+      ],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-coreg-id-mapping",
+      "note": null
+    },
+    "e31d29f8-7eee-446b-8f0a-2f027fe6f39b": {
+      "name": "aind-ophys-decrosstalk-roi-images",
+      "id": "e31d29f8-7eee-446b-8f0a-2f027fe6f39b",
+      "type": "production",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/aind-ophys-decrosstalk-roi-images",
+      "note": null
+    },
+    "f8b70600-5d94-41e8-a57b-ed4e4a1c03d7": {
+      "name": "CTL-metadata-fix-1.4",
+      "id": "f8b70600-5d94-41e8-a57b-ed4e4a1c03d7",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-metadata-fix-1.4",
+      "note": null
+    },
+    "bf092a8a-8106-4b92-9ca3-5c9e0df23d47": {
+      "name": "CTL-HCR-cell-gene-tables",
+      "id": "bf092a8a-8106-4b92-9ca3-5c9e0df23d47",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-HCR-cell-gene-tables",
+      "note": null
+    },
+    "3d9b47c2-25dc-483b-9306-5a8d58f38888": {
+      "name": "lightningPose eye tracking training",
+      "id": "3d9b47c2-25dc-483b-9306-5a8d58f38888",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/lightningPose-eye-tracking-training",
+      "note": null
+    },
+    "54a4898c-01a0-4710-be33-4a528bc8b4b4": {
+      "name": "lightningPose eye tracking",
+      "id": "54a4898c-01a0-4710-be33-4a528bc8b4b4",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "lp-eye",
+      "tags": [
+        "lp-eye"
+      ],
+      "required_data_type": "ophys raw data",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/lightningPose-eye-tracking",
+      "note": null
+    },
+    "d9a46471-372d-4e54-a77a-29aeca6b04d2": {
+      "name": "Multiscope decrosstalk QC (gui app)",
+      "id": "d9a46471-372d-4e54-a77a-29aeca6b04d2",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/multiscope-decrosstalk-qc-using-gui-app",
+      "note": "Using https://github.com/jkim0731/multiscope-decrosstalk-qc-app"
+    }
+  },
+  "index_by_name": {
+    "claude code - anything": {
+      "name": "Claude Code - anything",
+      "id": "6cd446a6-0d1f-4235-b929-db352bcfbc4a",
+      "type": "base",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for running claude code in ubuntu"
+    },
+    "claude code ubuntu base - cuda": {
+      "name": "Claude Code ubuntu base - CUDA",
+      "id": "99ebc741-fca8-4d1f-80fe-694f9596dfc8",
+      "type": "base",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for running claude code in ubuntu - with CUDA"
+    },
+    "docdb and co query": {
+      "name": "DocDB and CO query",
+      "id": "ff24db9d-8127-4e08-a3f4-14ae24d272cd",
+      "type": "regular use",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Querying data from CO or using docDB"
+    },
+    "quick check capsule - jinho": {
+      "name": "quick check capsule - Jinho",
+      "id": "48474334-8e64-44d8-a0ee-dd814f2b76c1",
+      "type": "regular use",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "VSCode capsue to quickly check something"
+    },
+    "dff baseline dev - claude code": {
+      "name": "dff baseline dev - Claude Code",
+      "id": "a5950e60-5652-4edb-8ce1-c8ad8933bc9a",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/dff_baseline_search",
+      "note": "Developing dff baseline for inhibitory neurons"
+    },
+    "aind-ophys-mfish-glm": {
+      "name": "AIND-ophys-mFISH-GLM",
+      "id": "72c5a62e-14b3-428b-ac2a-1eccbdc4cce3",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/AIND-ophys-mFISH-GLM",
+      "note": "GLM - not yet implemented as pipeline (initial_dev branch)"
+    },
+    "dff baseline qc (tri-exp tukeys biweight irls)": {
+      "name": "dff baseline QC (tri-exp tukey's biweight IRLS)",
+      "id": "764b1258-230c-4241-a129-e4a32ea5e66e",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Manual QC for dff baseline"
+    },
+    "cpsam-test": {
+      "name": "CPSAM-test",
+      "id": "c8ba4c67-2823-41f4-a928-7b5a3c89357a",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": null
+    },
+    "3d fish roi-quality classifier": {
+      "name": "3D FISH ROI-quality classifier",
+      "id": "ce67ff73-8963-4eed-ade8-4d3d5248a3f5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "HCR-ROI-label",
+      "tags": [
+        "HCR-ROI-label"
+      ],
+      "required_data_type": "HCR processed (R1)",
+      "pre_attached_name": "model_3D-HCR-ROI_LGBM_4-class_2026-06-19_14-26-00",
+      "pre_attached_id": "60273109-23bc-4ed9-9cae-2ce601bb54ee",
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-classifier",
+      "note": "HCR ROI classifier - the model can change (from 3D HCR ROI-quality classifier training)"
+    },
+    "3d fish roi-quality labeling": {
+      "name": "3D FISH ROI-quality labeling",
+      "id": "b367e196-440d-4ae7-b9c1-44a32afee5d8",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "derived",
+        "HCR-ROI-labeling"
+      ],
+      "required_data_type": "HCR processed (R1); HCR-ROI-label",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-labeling",
+      "note": "Manual labeling HCR ROIs; requires labeled data"
+    },
+    "3d fish roi-quality classifier training": {
+      "name": "3D FISH ROI-quality classifier training",
+      "id": "9022c7ed-e409-4ae4-9bb3-1392ff6d6db5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "model",
+        "HCR-ROI-classification"
+      ],
+      "required_data_type": "HCR-ROI-labeling",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-3D-FISH-ROI-classifier-training",
+      "note": "Training a model for ROI classifier; Mlflow"
+    },
+    "2p-3dfish automated coregistration": {
+      "name": "2p-3DFISH automated coregistration",
+      "id": "9c979dd5-5516-4c8f-8075-cc1d1ae74568",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "2p-3DFISH-autocoreg",
+      "tags": [
+        "2p-3DFISH-autocoreg"
+      ],
+      "required_data_type": "HCR processed (R1); HCR-ROI-label; cortical-zstack-registration; cortical-zstack-segmentation",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/capsule-2p-3DFISH-autocoreg",
+      "note": "Running automatic co-registration between 2p czstack and 3D FISH and generate pre_coreg_table.csv"
+    },
+    "2p-3dfish autocoreg qc": {
+      "name": "2p-3DFISH autocoreg QC",
+      "id": "8935ac9e-7c9c-474a-ab30-e2cb8af7c341",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "2p-3DFISH-autocoreg-qced",
+      "tags": [
+        "2p-3DFISH-autocoreg-qced"
+      ],
+      "required_data_type": "2p-3DFISH-autocoreg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/interactive-capsule-2p-3DFISH-autocoreg-QC",
+      "note": "Manually QC automatic coreg results and generate coreg_table.csv"
+    },
+    "ophys-xenium autocoreg dev": {
+      "name": "ophys-Xenium autoCoreg dev",
+      "id": "1db12cc3-efe7-4929-abd1-02ff6475e97d",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Developing auto-coreg between 2p zstack and Xenium"
+    },
+    "residual interaction dev": {
+      "name": "Residual interaction dev",
+      "id": "c4b4b96e-a217-4b58-b1fd-1383c15e1bc4",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/residual-interaction-dev",
+      "note": "Developing functional interaction analysis - residual interaction"
+    },
+    "single cell response characteristics": {
+      "name": "Single cell response characteristics",
+      "id": "15d8e68a-ebac-43b8-a923-6d45736d553a",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Developing single cell response characteristics"
+    },
+    "jinho_base - vscode python 3.11 co4.3 (260309)": {
+      "name": "Jinho_base - VSCode python 3.11 CO4.3 (260309)",
+      "id": "de66dd7b-6723-4350-a9f4-d63a80ffce0d",
+      "type": "base",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base capsule for VSCode"
+    },
+    "jinhos copy of roicat cross-session matching": {
+      "name": "Jinho's Copy of ROICaT Cross-session Matching",
+      "id": "0f51d117-39dc-4c27-a62a-965b4216a32e",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "ROICat",
+      "tags": [
+        "ROICat"
+      ],
+      "required_data_type": "all processed ophys data assets from one mouse",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Running ROICaT for cross-session matching"
+    },
+    "single cell z-drift qc": {
+      "name": "Single cell z-drift QC",
+      "id": "93fc2a62-ed5e-42ef-80fa-901bf4bf1f34",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "single-cell-zdrift-qc",
+      "tags": [
+        "single-cell-zdrift-qc"
+      ],
+      "required_data_type": "ophys processed data asset (single session)",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/single-cell-zdrift-qc",
+      "note": "Single cell z-drift QC"
+    },
+    "ophys-mfish auto coreg dev - claude code v0.2 - cpsam": {
+      "name": "ophys-mFISH auto coreg dev - Claude Code v0.2 - cpsam",
+      "id": "e4062333-2d71-4ae5-a52e-2e5b3926717d",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/jkim0731/2p-hcr-autocoreg/tree/cpsam",
+      "note": "Developing cellpose-SAM for HCR ROI segmentation (failed to improve)"
+    },
+    "gcamp_expression_comparison_drifting_gratings - main": {
+      "name": "GCaMP_expression_comparison_drifting_gratings - Main",
+      "id": "1d88d40d-48f3-4ea3-becc-164e6d9a02bc",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analysis capsule for GCaMP Tg characterization"
+    },
+    "copy of xenium_pipeline - capsule 9.1": {
+      "name": "Copy of Xenium_Pipeline - Capsule 9.1",
+      "id": "795194c7-5681-4252-82c0-aeb19f45eb82",
+      "type": "dev",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Copy of Omid's capsule 9.1 for xenium coreg (for xenium auto-coreg dev)"
+    },
+    "ophys-zstack-segmentation": {
+      "name": "ophys-zstack-segmentation",
+      "id": "0a174d03-4330-4f76-a76c-c56cca4293f0",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "cortical-zstack-segmentation",
+      "tags": [
+        "cortical-zstack-segmentation"
+      ],
+      "required_data_type": "cortical-zstack-registration",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-segmentation",
+      "note": "Cortical z-stack segmentation (cpsam branch)"
+    },
+    "(old) ctl conditioned mean responses": {
+      "name": "(old) CTL conditioned mean responses",
+      "id": "c6170692-10c0-4ae2-b734-db273c9dd5d7",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "conditioned-mean-response",
+      "tags": [
+        "conditioned-mean-response"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": "vb_image_dictionaries",
+      "pre_attached_id": "a5827c34-40c5-42e9-b313-177375808914",
+      "git": null,
+      "note": "Conditioned mean responses"
+    },
+    "ctl conditioned mean responses": {
+      "name": "CTL conditioned mean responses",
+      "id": "bdf4b550-6bca-49af-a7c0-9587bbcfac6a+F32",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "conditioned-mean-response",
+      "tags": [
+        "conditioned-mean-response"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": "vb_image_dictionaries",
+      "pre_attached_id": "a5827c34-40c5-42e9-b313-177375808914",
+      "git": "https://github.com/AllenNeuralDynamics/CTL-conditioned-mean-response",
+      "note": "Conditioned mean responses"
+    },
+    "ophys-zstack-registration": {
+      "name": "ophys-zstack-registration",
+      "id": "c975fe83-f91d-457e-9e28-596e1e551790",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "cortical-zstack-registration",
+      "tags": [
+        "cortical-zstack-registration"
+      ],
+      "required_data_type": "ophys processed data asset with cortical z-stack",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-registration",
+      "note": "Cortical z-stack registration - needs update for expansion across plane-to-plane registration"
+    },
+    "ophys-zstack-to-fov": {
+      "name": "ophys-zstack-to-fov",
+      "id": "feea9925-bb8d-4c32-803f-d67798ca792e",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "CTL-czstack-to-fov",
+      "tags": [
+        "ctl-czstack-to-fov"
+      ],
+      "required_data_type": "ophys processed data; cortical-zstack-reg; cortical-zstack-seg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/ophys-zstack-to-fov",
+      "note": null
+    },
+    "coreg-id-mapping with napari": {
+      "name": "coreg-id-mapping with napari",
+      "id": "b04ba196-fdd7-4199-a15a-84e8508b0014",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "ctl-coreg-id-mapping"
+      ],
+      "required_data_type": "ROICat; all ophys processed assets; CTL-czstack-to-fov; czstack-hcr-coreg",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Generating coregistration id mapping for FOV ROI, ROICaT ID, czstack ROI ID, and EASI-FISH ROI ID"
+    },
+    "coreg-id-mapping": {
+      "name": "coreg-id-mapping",
+      "id": "04969519-db4a-41a7-a48b-9649a4b576fe",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [
+        "ctl-coreg-id-mapping"
+      ],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": null
+    },
+    "ctl session processing qc": {
+      "name": "CTL session processing QC",
+      "id": "576ee468-3049-4001-8ae6-4d7c944f4dd5",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "ctl-session-qc",
+      "tags": [
+        "ctl-session-qc"
+      ],
+      "required_data_type": "ophys processed; ophys raw; pupil",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Generating session QC plot for activity heatmap and behavior"
+    },
+    "jinho_base - ubuntu for visualization tools, co4.3 (260309)": {
+      "name": "Jinho_base - ubuntu for visualization tools, CO4.3 (260309)",
+      "id": "33899f54-23fb-4b69-a2db-bb31f1067eee",
+      "type": "base",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Base for ubuntu workstation - for visualization (e.g., napari, fiji)"
+    },
+    "260209 single cell z-drift metric dev (ubuntu)": {
+      "name": "260209 single cell z-drift metric dev (ubuntu)",
+      "id": "47821454-d055-4631-a7e7-8fd6820afaa8",
+      "type": "dev",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Dev capsule for single cell z-drift QC"
+    },
+    "260128 fov size comparison": {
+      "name": "260128 FOV size comparison",
+      "id": "de045178-ef8e-47ef-8de8-02553cd0e860",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analyzing FOV comparison (to increase FOV size); done; decided to increase from 400x400 to 512x512"
+    },
+    "260126_stim_timing_comparison": {
+      "name": "260126_stim_timing_comparison",
+      "id": "dd5efb4b-f785-4b8f-b4ed-b35499ddf67b",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Comparing different stim timing calculation protocols; done; comb method is the best"
+    },
+    "jinhos copy of omfish - manual co-registration": {
+      "name": "Jinho's Copy of omFISH - Manual Co-registration",
+      "id": "821ff866-cfdb-47bf-be44-469cd153aa11",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Manual co-registration between czstack and 3D FISH"
+    },
+    "jinhos copy of aind-capsule-eye-tracking": {
+      "name": "Jinho's Copy of aind-capsule-eye-tracking",
+      "id": "961a643b-e392-4939-bfdf-1c5d01be1e09",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "dlc-eye",
+      "tags": [
+        "dlc-eye"
+      ],
+      "required_data_type": "ophys raw data",
+      "pre_attached_name": "universal_eye_tracking-peterl-2019-07-10",
+      "pre_attached_id": "05529cfc-23fe-4ead-9490-71763e9f7c01",
+      "git": "https://github.com/AllenNeuralDynamics/Jinho-copy_aind-capsule-eye-tracking",
+      "note": "DLC for pupil tracking (copy from Ben's capsule); git and capsule not linked (git export issue - going to be archived soon; just for reference purposes)"
+    },
+    "local zstack ophys-zstack-segmentation": {
+      "name": "local zstack ophys-zstack-segmentation",
+      "id": "6370ddcf-5437-49de-8474-a83b0f910c54",
+      "type": "capsule",
+      "shared": "No",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": "ophys processed data",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Local z-stack segmentation (stale)"
+    },
+    "online motion correction analysis": {
+      "name": "Online motion correction analysis",
+      "id": "466fc6e0-92cd-4e9f-b8f0-bcd1c65bb413",
+      "type": "analysis",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": null,
+      "note": "Analyzing online motion correction"
+    },
+    "ctl coreg-id-mapping": {
+      "name": "CTL coreg-id-mapping",
+      "id": "7401096e-fee4-4d50-a715-feec3ebacc49",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "coreg-id-mapping",
+      "tags": [
+        "coreg-id-mapping"
+      ],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-coreg-id-mapping",
+      "note": null
+    },
+    "aind-ophys-decrosstalk-roi-images": {
+      "name": "aind-ophys-decrosstalk-roi-images",
+      "id": "e31d29f8-7eee-446b-8f0a-2f027fe6f39b",
+      "type": "production",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/aind-ophys-decrosstalk-roi-images",
+      "note": null
+    },
+    "ctl-metadata-fix-1.4": {
+      "name": "CTL-metadata-fix-1.4",
+      "id": "f8b70600-5d94-41e8-a57b-ed4e4a1c03d7",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-metadata-fix-1.4",
+      "note": null
+    },
+    "ctl-hcr-cell-gene-tables": {
+      "name": "CTL-HCR-cell-gene-tables",
+      "id": "bf092a8a-8106-4b92-9ca3-5c9e0df23d47",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/CTL-HCR-cell-gene-tables",
+      "note": null
+    },
+    "lightningpose eye tracking training": {
+      "name": "lightningPose eye tracking training",
+      "id": "3d9b47c2-25dc-483b-9306-5a8d58f38888",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/lightningPose-eye-tracking-training",
+      "note": null
+    },
+    "lightningpose eye tracking": {
+      "name": "lightningPose eye tracking",
+      "id": "54a4898c-01a0-4710-be33-4a528bc8b4b4",
+      "type": "capsule",
+      "shared": "Yes",
+      "suffix": "lp-eye",
+      "tags": [
+        "lp-eye"
+      ],
+      "required_data_type": "ophys raw data",
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/lightningPose-eye-tracking",
+      "note": null
+    },
+    "multiscope decrosstalk qc (gui app)": {
+      "name": "Multiscope decrosstalk QC (gui app)",
+      "id": "d9a46471-372d-4e54-a77a-29aeca6b04d2",
+      "type": "interactive capsule",
+      "shared": "Yes",
+      "suffix": null,
+      "tags": [],
+      "required_data_type": null,
+      "pre_attached_name": null,
+      "pre_attached_id": null,
+      "git": "https://github.com/AllenNeuralDynamics/multiscope-decrosstalk-qc-using-gui-app",
+      "note": "Using https://github.com/jkim0731/multiscope-decrosstalk-qc-app"
+    }
+  }
+}
