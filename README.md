@@ -28,27 +28,38 @@ Each skill is a folder with a `SKILL.md` (the instructions Claude reads) plus a
 ## How to add to a capsule
 
 Claude Code discovers **project skills from `<capsule>/.claude/skills/`** — so the
-skills must be reachable there. Rather than clone this repo *as* that directory (which
-would make every local skill you create show up as an untracked change in this shared
-repo), clone it into its own folder and symlink the skills in:
+skills must be reachable there. Don't clone this repo *as* that directory (then every
+local skill you create shows up as an untracked change here). Instead clone it into its
+own folder and **symlink** the skills into `.claude/skills/`. Pick one of two layouts:
+
+**A. Shared external clone (recommended on a machine with a persistent volume — one
+clone serves every capsule, no nested `.git` inside any capsule):**
 
 ```bash
-cd <capsule-root>                        # the dir with code/, .claude/, environment/
-REPO=code/claude-code-skills-codeocean
-
-# 1. bring in the shared repo (pick ONE):
-git clone https://github.com/jkim0731/claude-code-skills-codeocean.git "$REPO"
-#   …or pin it as a submodule (records the commit in the capsule's git):
-#   git submodule add https://github.com/jkim0731/claude-code-skills-codeocean.git "$REPO"
-
-# 2. expose each shared skill to Claude Code via a symlink:
-mkdir -p .claude/skills
-for s in "$REPO"/codeocean-*/; do
-    ln -sfn "../../$REPO/$(basename "$s")" ".claude/skills/$(basename "$s")"
+SKILLS=/scratch/claude-code-skills-codeocean                 # persistent, off the root overlay
+git clone https://github.com/jkim0731/claude-code-skills-codeocean.git "$SKILLS"   # once per machine
+cd <capsule-root>; mkdir -p .claude/skills
+for name in codeocean-run-capture codeocean-data-assets codeocean-app-panel; do
+    ln -sfn "$SKILLS/$name" ".claude/skills/$name"           # absolute symlink -> shared clone
 done
-
-# 3. reload / restart Claude Code so it re-scans .claude/skills (discovery runs at startup).
 ```
+Trade-off: the symlinks are absolute/external — valid only where `$SKILLS` exists. In a
+fresh environment (e.g. a clean Code Ocean checkout) they dangle until the clone is
+recreated, so this is NOT self-contained. Use layout B if the capsule must carry the
+skills itself.
+
+**B. Submodule inside the capsule (self-contained / portable — travels with the capsule's git):**
+
+```bash
+cd <capsule-root>
+git submodule add https://github.com/jkim0731/claude-code-skills-codeocean.git code/claude-code-skills-codeocean
+mkdir -p .claude/skills
+for name in codeocean-run-capture codeocean-data-assets codeocean-app-panel; do
+    ln -sfn "../../code/claude-code-skills-codeocean/$name" ".claude/skills/$name"   # relative symlink
+done
+```
+
+Then **reload / restart Claude Code** so it re-scans `.claude/skills` (discovery runs at startup).
 
 ### Capsule-specific (local) skills
 Put them as **real folders directly in `.claude/skills/`** (e.g.
@@ -58,15 +69,15 @@ repo's `git status` never sees them and they are never committed here — only t
 
 ### Updating the shared skills later
 ```bash
-git -C code/claude-code-skills-codeocean pull          # plain clone
-# or, if a submodule:  git submodule update --remote code/claude-code-skills-codeocean
+git -C "$SKILLS" pull                                     # layout A (external clone)
+# layout B (submodule):  git submodule update --remote code/claude-code-skills-codeocean
 ```
 The symlinks pick up the new content automatically; no re-linking needed.
 
 ## Quick reference
 
 ```bash
-S=code/claude-code-skills-codeocean
+S=/scratch/claude-code-skills-codeocean       # layout A; for B use code/claude-code-skills-codeocean
 python $S/codeocean-data-assets/scripts/co_data_assets.py attach --asset <id>
 python $S/codeocean-run-capture/scripts/co_run_capture.py run --capsule-id <id> --data-asset <id>[:mount] --wait --capture --result-name <name> --tag <t>
 python $S/codeocean-app-panel/scripts/check_app_panel.py <capsule_dir>
