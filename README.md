@@ -13,6 +13,7 @@ also have its own task-specific skills without them leaking into this shared rep
 | **codeocean-run-capture** | Run a CO capsule/pipeline with attached data assets and capture the results as a named, tagged data asset. Includes per-session / per-subject batch orchestration (`run_per_session.sh`, `run_per_subject.sh`) and a server-side pipeline-monitor mode. |
 | **codeocean-data-assets** | Search, **attach** (mount into the current computation's `/data` — immediate, no restart), and **detach** CO data assets by id / tag / name / subject. |
 | **codeocean-app-panel** | Author & validate a capsule's App Panel (`.codeocean/app-panel.json`) and keep its parameters in sync with `code/run_capsule.py` argparse (static checker — every panel param's key must map to an argparse `--flag`). |
+| **codeocean-git-sync** | Sync a capsule with its linked external Git repo (GitHub/GitLab/…) via `POST /api/v1/capsules/{id}/sync` — pushes the capsule's commits out **and** pulls remote commits in. |
 
 Each skill is a folder with a `SKILL.md` (the instructions Claude reads) plus a
 `scripts/` directory with the underlying Python/bash tools you can also run by hand.
@@ -39,7 +40,7 @@ clone serves every capsule, no nested `.git` inside any capsule):**
 SKILLS=/scratch/claude-code-skills-codeocean                 # persistent, off the root overlay
 git clone https://github.com/jkim0731/claude-code-skills-codeocean.git "$SKILLS"   # once per machine
 cd <capsule-root>; mkdir -p .claude/skills
-for name in codeocean-run-capture codeocean-data-assets codeocean-app-panel; do
+for d in "$SKILLS"/codeocean-*/; do name=$(basename "$d")
     ln -sfn "$SKILLS/$name" ".claude/skills/$name"           # absolute symlink -> shared clone
 done
 ```
@@ -54,7 +55,7 @@ skills itself.
 cd <capsule-root>
 git submodule add https://github.com/jkim0731/claude-code-skills-codeocean.git code/claude-code-skills-codeocean
 mkdir -p .claude/skills
-for name in codeocean-run-capture codeocean-data-assets codeocean-app-panel; do
+for d in code/claude-code-skills-codeocean/codeocean-*/; do name=$(basename "$d")
     ln -sfn "../../code/claude-code-skills-codeocean/$name" ".claude/skills/$name"   # relative symlink
 done
 ```
@@ -81,4 +82,5 @@ S=/scratch/claude-code-skills-codeocean       # layout A; for B use code/claude-
 python $S/codeocean-data-assets/scripts/co_data_assets.py attach --asset <id>
 python $S/codeocean-run-capture/scripts/co_run_capture.py run --capsule-id <id> --data-asset <id>[:mount] --wait --capture --result-name <name> --tag <t>
 python $S/codeocean-app-panel/scripts/check_app_panel.py <capsule_dir>
+python $S/codeocean-git-sync/scripts/co_git_sync.py                     # sync current capsule with its GitHub repo
 ```
