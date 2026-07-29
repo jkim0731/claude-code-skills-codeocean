@@ -34,7 +34,7 @@ Auth/domain: same env as co_run_capture.py ($CODEOCEAN_TOKEN/$API_SECRET, $CODEO
 Billable: launches runs + creates data assets.
 """
 from __future__ import annotations
-import argparse, csv, os, pathlib, sys, time
+import argparse, csv, json, os, pathlib, sys, time, urllib.request
 from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -42,6 +42,58 @@ import co_run_capture as crc  # reuse build_monitor_json / raw_session_name
 
 ACTIVE = {"initializing", "running", "finalizing"}
 DONE = {"completed", "failed"}
+
+
+# ── QC-parameter matching (for --skip-existing --require-params) ───────────────────
+# Skip an item only if its existing capture was produced with an IDENTICAL QC parameter
+# set (names + numeric values). Params live in the capture's processing.json (not in
+# provenance), so this reads that file via the data-asset file-URL API. Mirrors the
+# capsule's own idempotency guard in run_capsule.py.
+def parse_require_params(spec):
+    """'--require-params k=v,k2=v2' -> {k: v, ...} (repeatable; comma- or space-separated)."""
+    out = {}
+    for chunk in spec or []:
+        for kv in str(chunk).replace(",", " ").split():
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                out[k.strip()] = v.strip()
+    return out
+
+
+def capture_qc_params(client, asset_id, want_keys):
+    """Fetch a capture's processing.json and return {k: value} for k in want_keys that it
+    recorded. Returns None on any read/parse failure (caller then treats as 'cannot skip')."""
+    try:
+        fu = client.data_assets.get_data_asset_file_urls(asset_id, "processing.json")
+        url = getattr(fu, "download_url", None) or getattr(fu, "url", None)
+        if not url:
+            return None
+        data = json.loads(urllib.request.urlopen(url, timeout=30).read())
+        procs = (data.get("processing_pipeline", {}) or {}).get("data_processes", []) \
+            or data.get("data_processes", []) or []
+        for pr in procs:
+            params = pr.get("parameters") or {}
+            present = {k: params[k] for k in want_keys if k in params}
+            if present:
+                return present
+    except Exception as e:  # noqa: BLE001
+        print(f"    [require-params] could not read processing.json for {asset_id}: {e}", flush=True)
+    return None
+
+
+def qc_params_match(src, target):
+    """True iff src recorded EXACTLY target's parameter names AND (numeric) values."""
+    if not src or set(src.keys()) != set(target.keys()):
+        return False
+    for k in target:
+        a, b = src[k], target[k]
+        try:
+            if abs(float(a) - float(b)) > 1e-9:
+                return False
+        except (TypeError, ValueError):
+            if str(a) != str(b):
+                return False
+    return True
 
 
 def classify_outcome(comp):
@@ -187,6 +239,12 @@ def find_existing(client, args, sess_id, base):
             continue
         if args.require_commit and getattr(prov, "commit", None) != args.require_commit:
             continue
+        want = parse_require_params(getattr(args, "require_params", None))
+        if want:
+            got = capture_qc_params(client, a.id, set(want.keys()))
+            if not qc_params_match(got, want):
+                # existing capture used different QC params -> NOT the same run; let it re-run.
+                continue
         return a
     return None
 
@@ -253,6 +311,11 @@ def main():
                          "existing result's provenance.data_assets (repeatable)")
     ap.add_argument("--require-commit", default=None,
                     help="for --skip-existing: require the existing result's provenance.commit to match")
+    ap.add_argument("--require-params", action="append",
+                    help="for --skip-existing: only skip an item whose existing capture's processing.json "
+                         "recorded EXACTLY these QC params (names+values). Format 'k=v,k2=v2' (repeatable). "
+                         "A capture with a different param name-set or value re-runs. Reads processing.json "
+                         "per candidate (one extra API call each).")
     ap.add_argument("--max-jobs", type=int, default=10, help="max concurrent monitor jobs (default 10)")
     ap.add_argument("--poll", type=float, default=120, help="poll interval seconds (default 120)")
     ap.add_argument("--state-file", default=None, help="CSV of item,monitor_id,state (resumable)")
