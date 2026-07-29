@@ -197,7 +197,12 @@ def find_existing(client, args, sess_id, base):
     from codeocean.data_asset import DataAssetSearchParams
     from codeocean.components import SearchFilter
     suffix = args.process_name_suffix or ""
-    prefix = f"{base}_{suffix}_" if suffix else f"{base}_"
+    # Captures are named off the RAW-stripped base (a derived input like a *_lp-eye_* capture
+    # yields <session>_<suffix>_<ts>, not <...>_lp-eye_<ts>_<suffix>_<ts>) — matches how the
+    # capture is named (co_run_capture.resolve_result_name / batch_monitor --client-name). For a
+    # raw-session input raw_session_name is a no-op, so this stays backward-compatible.
+    rbase = crc.raw_session_name(base)
+    prefix = f"{rbase}_{suffix}_" if suffix else f"{rbase}_"
     # IMPORTANT: CO's `query`/`name` filters do NOT match a derived capture by its base
     # name (substring/prefix) — they return 0 or only the raw input asset. Only a TAG
     # search reliably returns captured results (verified 2026-07-24). So search by the
@@ -259,6 +264,12 @@ def submit(client, args, item):
     for ea in (getattr(args, "extra_asset", None) or []):
         eid, emount, _ = resolve(client, ea)
         da.append(DataAssetsRunParam(id=eid, mount=emount))
+    # per-item extra asset (e.g. the raw session for this item, so a QC-only run can
+    # regenerate the video-frame QC plots) — from --extra-asset-map {item: asset_id}
+    _emap = getattr(args, "_extra_asset_map", None) or {}
+    if item in _emap:
+        eid, emount, _ = resolve(client, _emap[item])
+        da.append(DataAssetsRunParam(id=eid, mount=emount))
     tags = list(args.tag or [])
     meta = crc.parse_kv(args.meta) if getattr(args, "meta", None) else {}
     # per-item subject tag + "subject id" metadata, derived from a
@@ -272,7 +283,13 @@ def submit(client, args, item):
             meta.setdefault("subject id", subj)
     capture = {"tags": tags, "process_name_suffix": args.process_name_suffix,
                "custom_metadata": (meta or None)}
-    payload = crc.build_monitor_json(args.capsule_id, da, capture, {})
+    if getattr(args, "client_name", False):
+        # SUBMIT-time, raw-stripped name so a QC-only re-run of a *_lp-eye_* capture is
+        # named <session>_<suffix>_<ts> (not <...>_lp-eye_<ts>_lp-eye_<ts>).
+        capture["name"] = f"{crc.raw_session_name(base)}_{args.process_name_suffix}_{crc._now_ts('UTC')}"
+        capture["process_name_suffix"] = None   # explicit name wins; avoid suffix ambiguity
+    run_extra = {"parameters": list(args.param)} if getattr(args, "param", None) else {}
+    payload = crc.build_monitor_json(args.capsule_id, da, capture, run_extra)
     if len(payload) > crc.MAX_PARAM_LEN:
         raise RuntimeError(f"payload {len(payload)} > {crc.MAX_PARAM_LEN}")
     comp = client.computations.run_capsule(RunParams(capsule_id=args.monitor_capsule_id, parameters=[payload]))
@@ -297,6 +314,10 @@ def main():
     ap.add_argument("--extra-asset", action="append",
                     help="extra fixed data asset attached to every run ('id[:mount]' or 'name[:mount]'); "
                          "e.g. a non-default model checkpoint. Mount defaults to the asset name.")
+    ap.add_argument("--extra-asset-map", default=None,
+                    help="JSON file {item: extra_asset_id}: a PER-ITEM extra asset to also attach for "
+                         "that item (e.g. the raw session so a QC-only run can regenerate video-frame QC "
+                         "plots). Mount defaults to the asset name.")
     ap.add_argument("--meta", action="append",
                     help="custom_metadata key=value (repeatable); applied to every item")
     ap.add_argument("--no-subject-tag", action="store_true",
@@ -316,6 +337,15 @@ def main():
                          "recorded EXACTLY these QC params (names+values). Format 'k=v,k2=v2' (repeatable). "
                          "A capture with a different param name-set or value re-runs. Reads processing.json "
                          "per candidate (one extra API call each).")
+    ap.add_argument("--param", action="append",
+                    help="capsule RunParams parameter token, passed through as argv to the TARGET capsule "
+                         "(repeatable, order preserved). E.g. for the QC-only capsule: "
+                         "--param --qc-only --param true")
+    ap.add_argument("--client-name", action="store_true",
+                    help="name the capture client-side at SUBMIT time as <raw_session_name(input)>_"
+                         "<suffix>_<ts>, stripping a derived _lp-eye_/_processed_ tail from the input "
+                         "asset name (so QC-only on an lp-eye capture is named <session>_lp-eye_<ts>, not "
+                         "doubled). Default: the monitor names it at capture time from data_description.json.")
     ap.add_argument("--max-jobs", type=int, default=10, help="max concurrent monitor jobs (default 10)")
     ap.add_argument("--poll", type=float, default=120, help="poll interval seconds (default 120)")
     ap.add_argument("--state-file", default=None, help="CSV of item,monitor_id,state (resumable)")
@@ -338,6 +368,9 @@ def main():
         args.process_name_suffix = "processed"   # argparse default, restored if registry set None
     if not args.capsule_id:
         sys.exit("ERROR: provide --capsule <name|id> (registry) or --capsule-id <id>.")
+    args._extra_asset_map = json.load(open(args.extra_asset_map)) if args.extra_asset_map else {}
+    if args._extra_asset_map:
+        print(f"extra-asset-map: per-item extra asset for {len(args._extra_asset_map)} items", flush=True)
 
     items = read_items(args.items_file, args.column, args.include_col, args.include_val)
     state_file = pathlib.Path(args.state_file or (pathlib.Path(args.items_file).with_suffix(".batchstate.csv")))
