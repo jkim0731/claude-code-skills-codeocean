@@ -21,11 +21,39 @@ Subcommands
   capture     create a data asset from an already-finished computation
   status      print a computation's state
   find-asset  search data assets by name -> print id / name / state
+  describe-params
+              inspect a target's PARAMETER CONFIGURATION — detect capsule vs
+              pipeline, list the app-panel parameters (param_name/default), and
+              print whether to pass them FLAT (positional --param) or NAMED
+              (--named-param param_name=value).
+
+Parameter configuration (flat vs named vs positional)
+-----------------------------------------------------
+  Capsules and pipelines are both reachable via /capsules/{id}, but they consume
+  parameters DIFFERENTLY, and a pipeline SILENTLY IGNORES flat positional
+  parameters (the run "succeeds" with default values). So `run` now:
+    1. detects the target kind (auto): a pipeline has a `versions` array and no
+       `cloned_from_url`; a capsule has `cloned_from_url`. Override with --kind.
+    2. routes parameters (--param-mode auto): pipeline -> NAMED; capsule -> FLAT.
+       For a pipeline, flat --param values are auto-mapped onto the app-panel
+       param_names by order (count must match), or pass --named-param directly.
+    3. runs pipelines via RunParams.pipeline_id (use --pipeline-id, or --kind
+       pipeline), capsules via capsule_id.
+    4. VERIFIES after submit that the values we requested actually landed on the
+       computation, and warns loudly on any mismatch (--no-verify-params to skip).
+  Use `describe-params` first when unsure how a target wants its parameters.
 
 Notes
 -----
   * `mount` is optional; when omitted, Code Ocean mounts an asset under its own
     name (what you want in almost all cases).
+  * Fixed assets baked into a pipeline (models, schemas) are attached
+    automatically — do NOT re-attach them or the API rejects the run with
+    "data asset already attached"; pass only the variable input(s).
+  * Captured assets are SHARED with everyone as `viewer` by default (matching the
+    Code Ocean UI capture default; the owner is kept). Use --private to keep it
+    private, or --share-role discoverable/none. (Direct-mode capture only; in
+    --monitor mode the aind pipeline-monitor controls capture/sharing.)
 
 Examples
 --------
@@ -277,6 +305,18 @@ def build_source(computation_id, path):
     return Source(computation=ComputationSource(id=computation_id, path=path or None))
 
 
+def share_everyone(client, asset_id, role="viewer"):
+    """Share a captured asset with everyone — mirrors the Code Ocean UI capture default (which
+    shares the result). Keeps the owner intact. role: 'viewer' (readable by all), 'discoverable'
+    (searchable only), or 'none' (private). Verifiable via GET data_assets/{id}/permissions."""
+    from codeocean.components import Permissions, EveryoneRole
+    try:
+        client.data_assets.update_permissions(asset_id, Permissions(everyone=EveryoneRole(role)))
+        print(f"  shared with everyone (everyone={role})")
+    except Exception as e:
+        print(f"  WARNING: could not set sharing (everyone={role}): {e}")
+
+
 def do_capture(client, computation_id, args):
     from codeocean.data_asset import DataAssetParams
     params = DataAssetParams(
@@ -290,6 +330,8 @@ def do_capture(client, computation_id, args):
     print(f"Creating data asset {args.result_name!r} from computation {computation_id} ...")
     asset = client.data_assets.create_data_asset(params)
     print(f"  data asset id: {asset.id}")
+    if not getattr(args, "private", False):
+        share_everyone(client, asset.id, getattr(args, "share_role", "viewer"))
     if not args.no_wait_asset:
         asset = client.data_assets.wait_until_ready(asset, polling_interval=args.poll, timeout=args.timeout)
         print(f"  data asset state: {getattr(asset, 'state', '?')}")
@@ -323,28 +365,188 @@ def build_monitor_json(target_capsule_id, data_assets, capture, run_extra):
         return json.dumps({"run_params": run_params, "capture_settings": capture}, separators=(",", ":"))
 
 
+# ── parameter-configuration checking (flat vs named vs positional) ────────────────────
+def detect_target_kind(client, capsule_id=None, pipeline_id=None, kind="auto"):
+    """Return (target_id, kind, reason) with kind in {'capsule','pipeline'}.
+
+    Pipelines and capsules are BOTH reachable via /capsules/{id} and the app-panel
+    endpoints, and a pipeline's flat positional `parameters` are silently IGNORED at
+    run time (you must pass NAMED parameters), so we must know which we're targeting.
+    Discriminator (confirmed on the AIND deployment): a pipeline's /capsules/{id}
+    payload carries a `versions` array and NO `cloned_from_url` (it is built in Code
+    Ocean, not git-cloned); a plain capsule has `cloned_from_url` and no `versions`.
+    """
+    if pipeline_id:
+        return pipeline_id, "pipeline", "explicit --pipeline-id"
+    tid = capsule_id
+    if kind in ("capsule", "pipeline"):
+        return tid, kind, f"forced via --kind {kind}"
+    try:
+        raw = client.session.get(f"capsules/{tid}").json()
+    except Exception as e:
+        return tid, "capsule", f"auto-detect failed ({e}); assuming capsule"
+    if ("versions" in raw) and ("cloned_from_url" not in raw):
+        return tid, "pipeline", "no cloned_from_url + has versions (Code-Ocean-built pipeline)"
+    return tid, "capsule", "has cloned_from_url (git-cloned capsule)"
+
+
+def fetch_param_config(client, tid):
+    """Return the target's app-panel parameter list as ordered dicts.
+
+    [{idx, param_name, name, value_type, default_value, category}, ...]  (may be []).
+    """
+    ap = client.capsules.get_capsule_app_panel(tid)
+    d = ap.to_dict() if hasattr(ap, "to_dict") else ap
+    cats = {c.get("id"): c.get("name") for c in (d.get("categories") or [])}
+    out = []
+    for i, p in enumerate(d.get("parameters") or []):
+        out.append({
+            "idx": i,
+            "param_name": p.get("param_name"),
+            "name": p.get("name"),
+            "value_type": str(p.get("value_type")),
+            "default_value": p.get("default_value"),
+            "category": cats.get(p.get("category"), p.get("category")),
+        })
+    return out
+
+
+def recommended_param_mode(kind, cfg):
+    """'named' | 'flat' | 'positional-cli' — how params must be passed to this target."""
+    if kind == "pipeline":
+        return "named"          # pipelines IGNORE flat positional parameters
+    return "flat" if cfg else "positional-cli"
+
+
+def build_param_plan(client, tid, kind, args):
+    """Route --param / --named-param into RunParams fields for this target's mode.
+
+    Returns (run_extra_params: dict, intended_named: dict, message: str). `intended_named`
+    (param_name -> value) is what we can later verify actually landed on the computation.
+    """
+    from codeocean.computation import NamedRunParam
+    mode = args.param_mode
+    if mode == "auto":
+        mode = "named" if kind == "pipeline" else "flat"
+
+    run_extra, intended, msgs = {}, {}, []
+
+    if args.named_param:
+        nd = parse_kv(args.named_param)
+        run_extra["named_parameters"] = [NamedRunParam(param_name=k, value=v) for k, v in nd.items()]
+        intended.update(nd)
+        msgs.append(f"NAMED parameters ({len(nd)}) from --named-param")
+        if args.param:
+            msgs.append("WARNING: ignoring --param because --named-param was given")
+    elif args.param:
+        if mode == "named":
+            # pipeline (or forced named): map flat positional values onto app-panel param_names
+            cfg = fetch_param_config(client, tid)
+            if not cfg:
+                sys.exit("ERROR: target needs NAMED parameters but exposes no app-panel params to map "
+                         "flat --param onto; pass --named-param param_name=value instead.")
+            if len(args.param) != len(cfg):
+                sys.exit(f"ERROR: --param count {len(args.param)} != app-panel param count {len(cfg)}; "
+                         f"cannot safely map flat->named. Use --named-param, or inspect with "
+                         f"`co_run_capture.py describe-params`.")
+            nd = {cfg[i]["param_name"]: v for i, v in enumerate(args.param)}
+            run_extra["named_parameters"] = [NamedRunParam(param_name=k, value=v) for k, v in nd.items()]
+            intended.update(nd)
+            msgs.append(f"kind=pipeline -> mapped {len(nd)} flat --param values onto NAMED parameters by app-panel order")
+        else:
+            run_extra["parameters"] = list(args.param)
+            msgs.append(f"FLAT positional parameters ({len(args.param)})")
+            # best-effort: if an app panel is present, remember intended values for verification
+            cfg = fetch_param_config(client, tid)
+            if cfg and len(cfg) == len(args.param):
+                intended = {cfg[i]["param_name"]: v for i, v in enumerate(args.param)}
+    else:
+        msgs.append("no parameters passed (target defaults apply)")
+
+    return run_extra, intended, "; ".join(msgs)
+
+
+def verify_applied_params(client, comp_id, intended):
+    """Fetch the submitted computation and confirm each intended param_name landed with
+    the requested value. Prints a prominent warning on any mismatch (the classic
+    flat-positional-ignored-by-a-pipeline failure) and returns True iff all matched."""
+    if not intended:
+        return True
+    try:
+        comp = client.computations.get_computation(comp_id)
+    except Exception as e:
+        print(f"  [params] could not verify applied parameters: {e}")
+        return True
+    resolved = {p.param_name: ("" if p.value is None else str(p.value)) for p in (comp.parameters or [])}
+    mism = [(k, v, resolved.get(k, "<absent>")) for k, v in intended.items()
+            if str(resolved.get(k, "<absent>")) != str(v)]
+    if mism:
+        print(f"  !! PARAMETER CHECK FAILED for computation {comp_id} — {len(mism)} requested value(s) did NOT apply")
+        print("     (likely a flat-vs-named mismatch; pipelines silently ignore flat positional parameters):")
+        for k, want, got in mism[:12]:
+            print(f"       {k}: requested {want!r} -> resolved {got!r}")
+        print("     -> inspect the target with `describe-params`; use --named-param for pipelines. "
+              "Consider stopping this computation and re-running.")
+        return False
+    print(f"  [params] verified {len(intended)} parameter value(s) applied on the computation")
+    return True
+
+
 # ── subcommands ─────────────────────────────────────────────────────────────────────
+def cmd_describe_params(args):
+    """Inspect a capsule/pipeline's parameter configuration and print how to pass params."""
+    client = get_client(args)
+    apply_registry(args)   # allow --capsule <name|id>
+    if not (args.capsule_id or args.pipeline_id):
+        sys.exit("ERROR: provide --capsule <name|id>, --capsule-id <id>, or --pipeline-id <id>.")
+    tid, kind, reason = detect_target_kind(client, args.capsule_id, args.pipeline_id, args.kind)
+    cfg = fetch_param_config(client, tid)
+    mode = recommended_param_mode(kind, cfg)
+    print(f"target {tid}")
+    print(f"  detected kind : {kind}   ({reason})")
+    print(f"  app-panel params: {len(cfg)}")
+    print(f"  PARAMETER MODE : {mode.upper()}")
+    if mode == "named":
+        print("    -> pipelines IGNORE flat positional --param; pass --named-param param_name=value")
+    elif mode == "flat":
+        print("    -> pass flat --param values in the idx order below, or --named-param param_name=value")
+    else:
+        print("    -> no app-panel params; capsule takes positional CLI args (flat --param), order per its code")
+    if cfg:
+        print(f"\n  {'idx':>3}  {'param_name':34s} {'value_type':10s} {'default':22s} category")
+        for p in cfg:
+            print(f"  {p['idx']:>3}  {str(p['param_name']):34s} {str(p['value_type']):10s} "
+                  f"{str(p['default_value'])[:22]:22s} {p['category']}")
+        if mode == "named":
+            print("\n  example:")
+            for p in cfg[:3]:
+                print(f"    --named-param {p['param_name']}={p['default_value']}")
+
+
 def cmd_run(args):
     from codeocean.computation import RunParams, ComputationState
     apply_registry(args)   # --capsule <name|id> -> fill capsule-id + suffix + tags from registry
-    if not args.capsule_id:
-        sys.exit("ERROR: provide --capsule <name|id> (registry) or --capsule-id <id>.")
+    if not (args.capsule_id or args.pipeline_id):
+        sys.exit("ERROR: provide --capsule <name|id> (registry), --capsule-id <id>, or --pipeline-id <id>.")
     client = get_client(args)
 
     data_assets = [parse_data_asset(s) for s in (args.data_asset or [])]
     data_assets += [resolve_asset_name(client, s) for s in (args.data_asset_name or [])]
 
-    # extra RunParams fields shared by both modes
-    run_extra = {}
+    # detect capsule-vs-pipeline and route parameters into the correct RunParams field
+    # (pipelines silently IGNORE flat positional parameters — they need NAMED ones).
+    tid, kind, reason = detect_target_kind(client, args.capsule_id, args.pipeline_id, args.kind)
+    print(f"[target] {tid}  kind={kind}  ({reason})")
+    run_extra, intended, pmsg = build_param_plan(client, tid, kind, args)
     if args.version is not None:
         run_extra["version"] = args.version
-    if args.param:
-        run_extra["parameters"] = list(args.param)
+    print(f"[params] {pmsg}")
 
     # ── monitor mode: hand the whole job to the aind pipeline-monitor capsule ──────
     if args.monitor:
-        if args.named_param:
-            sys.exit("ERROR: --named-param is not supported with --monitor; use --param.")
+        if kind == "pipeline":
+            print("  WARNING: --monitor launches the target via capsule_id; running a PIPELINE through "
+                  "the monitor may not execute it as a pipeline. Prefer direct mode (drop --monitor).")
         base_name = args.input_name or first_named_asset_name(args)
         capture = {
             "mount": args.result_mount,
@@ -372,11 +574,11 @@ def cmd_run(args):
                   f"(<base>_{args.process_name_suffix}_<capture-ts>)")
         else:
             sys.exit("ERROR: --monitor requires --result-name or --process-name-suffix")
-        payload = build_monitor_json(args.capsule_id, data_assets, capture, run_extra)
+        payload = build_monitor_json(tid, data_assets, capture, run_extra)
         if len(payload) > MAX_PARAM_LEN:
             sys.exit(f"ERROR: monitor JSON is {len(payload)} chars > {MAX_PARAM_LEN} limit — "
                      f"reduce tags/metadata/asset count.\n{payload}")
-        print(f"Monitor {args.monitor_capsule_id} -> target {args.capsule_id} "
+        print(f"Monitor {args.monitor_capsule_id} -> target {tid} "
               f"({len(data_assets)} asset(s), payload {len(payload)}/{MAX_PARAM_LEN} chars)")
         comp = client.computations.run_capsule(
             RunParams(capsule_id=args.monitor_capsule_id, parameters=[payload]))
@@ -391,20 +593,16 @@ def cmd_run(args):
         print(comp.id)
         return
 
-    # ── direct mode: run the target capsule ourselves, optionally capture ──────────
-    if args.named_param:
-        try:
-            from codeocean.computation import NamedRunParam
-            run_extra["named_parameters"] = [
-                NamedRunParam(param_name=k, value=v) for k, v in parse_kv(args.named_param).items()
-            ]
-        except ImportError:
-            sys.exit("ERROR: this codeocean version lacks NamedRunParam; use --param instead.")
-
-    print(f"Running capsule {args.capsule_id} with {len(data_assets)} data asset(s) ...")
+    # ── direct mode: run the target ourselves, optionally capture ──────────────────
+    id_kw = {"pipeline_id": tid} if kind == "pipeline" else {"capsule_id": tid}
+    print(f"Running {kind} {tid} with {len(data_assets)} data asset(s) ...")
     computation = client.computations.run_capsule(
-        RunParams(capsule_id=args.capsule_id, data_assets=data_assets or None, **run_extra))
+        RunParams(data_assets=data_assets or None, **id_kw, **run_extra))
     print(f"  computation id: {computation.id}")
+
+    # verify the parameters we requested actually applied (catches flat-vs-named mismatch)
+    if intended and not args.no_verify_params:
+        verify_applied_params(client, computation.id, intended)
 
     if not args.wait:
         print("  (not waiting; capture later with:  capture --computation-id "
@@ -479,6 +677,11 @@ def add_capture_opts(p):
     p.add_argument("--meta", action="append", help="custom_metadata key=value (repeatable)")
     p.add_argument("--description", default=None)
     p.add_argument("--no-wait-asset", action="store_true", help="don't wait for the asset to become Ready")
+    p.add_argument("--private", action="store_true",
+                   help="do NOT share the captured asset (default: share with everyone as viewer, "
+                        "matching the Code Ocean UI capture default)")
+    p.add_argument("--share-role", default="viewer", choices=["viewer", "discoverable", "none"],
+                   help="everyone-access level for the captured asset (default: viewer)")
 
 
 def build_parser():
@@ -488,14 +691,24 @@ def build_parser():
     r = sub.add_parser("run", help="attach assets, run a capsule, optionally wait + capture")
     add_common_auth(r)
     r.add_argument("--capsule-id", default=None, help="target capsule id (or use --capsule to look it up)")
+    r.add_argument("--pipeline-id", default=None,
+                   help="target PIPELINE id (runs via RunParams.pipeline_id; implies --kind pipeline)")
+    r.add_argument("--kind", choices=["auto", "capsule", "pipeline"], default="auto",
+                   help="target type; 'auto' detects capsule vs pipeline (default auto)")
+    r.add_argument("--param-mode", choices=["auto", "flat", "named"], default="auto",
+                   help="how to pass --param: auto picks named for pipelines / flat for capsules (default auto)")
+    r.add_argument("--no-verify-params", action="store_true",
+                   help="skip the post-submit check that requested parameter values actually applied")
     r.add_argument("--capsule", default=None,
                    help="capsule name or id; looks up capsule-id + suffix + result tags in capsule_registry.json")
     r.add_argument("--registry", default=None, help="path to capsule_registry.json (default: skill dir)")
     r.add_argument("--data-asset", action="append", help="<asset_id>[:mount] (repeatable)")
     r.add_argument("--data-asset-name", action="append", help="<asset_name>[:mount], resolved via search (repeatable)")
-    r.add_argument("--version", type=int, default=None, help="capsule version (optional)")
-    r.add_argument("--param", action="append", help="positional parameter value (repeatable)")
-    r.add_argument("--named-param", action="append", help="named parameter key=value (repeatable)")
+    r.add_argument("--version", type=int, default=None, help="capsule/pipeline version (optional)")
+    r.add_argument("--param", action="append",
+                   help="parameter value: flat positional for capsules; for pipelines these are auto-mapped "
+                        "onto app-panel param_names by order (repeatable)")
+    r.add_argument("--named-param", action="append", help="named parameter param_name=value (repeatable)")
     r.add_argument("--wait", dest="wait", action="store_true", default=True)
     r.add_argument("--no-wait", dest="wait", action="store_false")
     r.add_argument("--capture", action="store_true", help="(direct mode) capture results as a data asset after completion")
@@ -529,6 +742,17 @@ def build_parser():
     f.add_argument("--name", required=True)
     f.add_argument("--limit", type=int, default=25)
     f.set_defaults(func=cmd_find_asset)
+
+    d = sub.add_parser("describe-params",
+                       help="inspect a capsule/pipeline's parameter configuration (flat vs named) + how to pass params")
+    add_common_auth(d)
+    d.add_argument("--capsule-id", default=None, help="target capsule id")
+    d.add_argument("--pipeline-id", default=None, help="target pipeline id")
+    d.add_argument("--capsule", default=None, help="capsule name or id (registry lookup)")
+    d.add_argument("--registry", default=None, help="path to capsule_registry.json (default: skill dir)")
+    d.add_argument("--kind", choices=["auto", "capsule", "pipeline"], default="auto",
+                   help="target type; 'auto' detects capsule vs pipeline (default auto)")
+    d.set_defaults(func=cmd_describe_params, process_name_suffix=None, tag=None)
     return ap
 
 

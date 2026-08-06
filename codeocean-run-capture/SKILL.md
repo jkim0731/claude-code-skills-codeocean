@@ -33,11 +33,34 @@ python "$CLAUDE_SKILL_DIR/scripts/co_run_capture.py" <subcommand> [options]
 
 ### Subcommands
 - `find-asset --name <substr>` — search data assets, print `id  state  name`.
-- `run --capsule-id <id> [--data-asset <id>[:mount] ...] [--data-asset-name <name>[:mount] ...]
+- `describe-params (--capsule-id <id> | --pipeline-id <id> | --capsule <name>)` —
+  inspect the target's **parameter configuration**: capsule vs pipeline, app-panel
+  params (`param_name`/default), and whether to pass them **flat** or **named**.
+- `run (--capsule-id <id> | --pipeline-id <id>) [--kind auto|capsule|pipeline]
+   [--param-mode auto|flat|named] [--data-asset <id>[:mount] ...] [--data-asset-name <name>[:mount] ...]
    [--param V] [--named-param k=v] [--wait|--no-wait]
    [--capture --result-name <name> --tag T --meta k=v --result-mount M --result-path P]`
 - `capture --computation-id <id> --result-name <name> [--tag T --meta k=v ...]`
 - `status --computation-id <id>`
+
+### Parameter configuration — CHECK IT FIRST (flat vs named)
+Capsules and pipelines take parameters **differently, and a pipeline SILENTLY
+IGNORES flat positional `--param`** (the run "succeeds" on defaults — e.g.
+`acquisition_data_type` stays `single`, not the `multiplane` you meant). Before
+running an unfamiliar target, inspect it:
+
+```bash
+python "$CLAUDE_SKILL_DIR/scripts/co_run_capture.py" describe-params --capsule-id <id>
+```
+
+`run` handles this automatically: `--kind auto` detects capsule vs pipeline (a
+pipeline has a `versions` array and no `cloned_from_url`), `--param-mode auto` uses
+**named** params for pipelines / **flat** for capsules (flat `--param` values are
+auto-mapped onto the pipeline's app-panel `param_name`s by order), pipelines are
+submitted via `pipeline_id`, and after submit the tool **verifies** the requested
+values actually landed (warns on mismatch; `--no-verify-params` to skip). Fixed
+pipeline assets (models/schemas) attach automatically — pass only the variable
+input(s), or the API rejects the run with *"data asset already attached"*.
 
 ### Typical flow
 1. Resolve asset ids: `find-asset --name <session_or_model>`.
@@ -80,6 +103,13 @@ tails like `*_processed_*` stripped). The timestamp reflects **capture time**:
 built post-completion in direct mode; named server-side by the monitor in monitor
 mode (uses the capsule's `data_description.json` when present). `--client-name`
 forces a client-side raw name (submit-time) if needed; `--result-name` overrides.
+
+### Sharing (default: shared)
+Direct-mode captures are **shared with everyone as `viewer` by default** — matching the Code
+Ocean UI capture default (the owner is kept):
+`update_permissions(id, Permissions(everyone=Viewer))`, verifiable via
+`GET data_assets/{id}/permissions`. Pass `--private` to keep it private, or `--share-role
+discoverable|none`. (In `--monitor` mode the aind pipeline-monitor controls capture/sharing.)
 
 ### Two orchestration scripts (sessions/subjects from a list OR a CSV column)
 - **PER-SESSION** — `run_per_session.sh sessions.txt|cohort.csv`: one run per

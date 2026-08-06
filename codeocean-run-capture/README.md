@@ -28,9 +28,45 @@ Both take the list of sessions/subjects from a plain text file **or a CSV column
 | command | what it does |
 |---|---|
 | `find-asset --name <substr>` | search data assets → `id  state  name` |
-| `run` | attach assets, run a capsule; direct (`--capture`) or `--monitor` |
+| `run` | attach assets, run a capsule/pipeline; direct (`--capture`) or `--monitor` |
 | `capture` | create a data asset from a finished computation id |
 | `status` | print a computation's state |
+| `describe-params` | inspect a target's **parameter configuration** — capsule vs pipeline, app-panel params, and whether to pass them **flat** or **named** |
+
+## Parameter configuration — flat vs named vs positional
+
+Capsules and pipelines consume parameters **differently**, and a **pipeline
+silently ignores flat positional parameters** — the run "succeeds" but every value
+falls back to its default (e.g. `acquisition_data_type` stays `single` instead of
+the `multiplane` you passed). So always check the target first:
+
+```bash
+python scripts/co_run_capture.py describe-params --capsule-id <id>      # auto-detects kind
+python scripts/co_run_capture.py describe-params --pipeline-id <id>
+```
+
+It prints the detected **kind**, the app-panel parameters (`idx / param_name /
+default / category`), and the required **PARAMETER MODE**:
+
+- **pipeline → NAMED**: pass `--named-param param_name=value`. Run pipelines with
+  `--pipeline-id` (or `--kind pipeline`); the tool submits via `RunParams.pipeline_id`.
+- **capsule (app panel) → FLAT**: pass `--param <value>` in the printed `idx` order,
+  or `--named-param`.
+- **capsule (no app panel) → positional CLI**: `--param` in the order its code expects.
+
+`run` does this automatically (`--kind auto`, `--param-mode auto`):
+
+1. **auto-detects** capsule vs pipeline (a pipeline has a `versions` array and no
+   `cloned_from_url`); override with `--kind {capsule,pipeline}`.
+2. **routes params**: pipeline → named; capsule → flat. For a pipeline, flat
+   `--param` values are **auto-mapped onto the app-panel param_names by order**
+   (count must match) so existing flat-param call sites keep working.
+3. **verifies after submit** that the requested values actually landed on the
+   computation, warning loudly on any mismatch (`--no-verify-params` to skip).
+
+> Fixed assets baked into a pipeline (models, schemas) attach **automatically** —
+> do not re-attach them (the API rejects the run with *"data asset already
+> attached"*); pass only the variable input(s), e.g. the raw session.
 
 ## Capsule registry — `--capsule <name|id|suffix>`
 `capsule_registry.json` (built from the CO capsule-info spreadsheet via
