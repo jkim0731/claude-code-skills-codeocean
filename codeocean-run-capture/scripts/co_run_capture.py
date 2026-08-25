@@ -2,8 +2,7 @@
 """co_run_capture — run a Code Ocean capsule/pipeline with attached data assets
 and capture its results as a named, tagged data asset.
 
-Self-contained: depends only on the `codeocean` python client
-(`pip install codeocean`). No lamf_analysis / aind-* packages required.
+Self-contained: depends only on the `codeocean` python client (`pip install codeocean`).
 
 Auth
 ----
@@ -109,79 +108,6 @@ MAX_PARAM_LEN = 4096
 _RAW_SESSION_RE = re.compile(r"^(?P<raw>.+?_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})(?:_.*)?$")
 _DERIVED_MARKERS = ("_processed", "_sorted", "_nwb", "_curated", "_dlc-eye", "_lp-eye")
 
-# ── capsule registry (built from the CO capsule-info spreadsheet via build_registry.py) ──
-REGISTRY_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "capsule_registry.json")
-
-
-def load_registry(path=None):
-    """Load the capsule registry JSON (maps name/id -> suffix/tags/required-data-type). None if absent."""
-    p = path or REGISTRY_PATH
-    if not os.path.exists(p):
-        return None
-    try:
-        with open(p) as f:
-            return json.load(f)
-    except Exception:
-        return None
-
-
-def resolve_capsule(name_or_id, path=None):
-    """Resolve a capsule by exact id, exact (normalized) name, or UNIQUE name-substring."""
-    reg = load_registry(path)
-    if not reg:
-        sys.exit(f"ERROR: capsule registry not found ({path or REGISTRY_PATH}); run build_registry.py first.")
-    key = str(name_or_id).strip()
-    if key in reg.get("index_by_id", {}):
-        return reg["index_by_id"][key]
-    nk = key.lower().replace("'", "")
-    if nk in reg.get("index_by_name", {}):
-        return reg["index_by_name"][nk]
-    bysuf = [c for c in reg["capsules"] if (c.get("suffix") or "").lower() == nk]
-    if len(bysuf) == 1:
-        return bysuf[0]
-    if len(bysuf) > 1:
-        sys.exit("ERROR: --capsule {!r} matches multiple capsules by suffix:\n{}".format(
-            name_or_id, "\n".join(f"  {c['name']}  ({c['id']})" for c in bysuf)))
-    subs = [c for c in reg["capsules"] if nk in c["name"].lower()]
-    if len(subs) == 1:
-        return subs[0]
-    if not subs:
-        sys.exit(f"ERROR: no capsule matching {name_or_id!r} in the registry.")
-    sys.exit("ERROR: ambiguous --capsule {!r}; matches:\n{}".format(
-        name_or_id, "\n".join(f"  {c['name']}  ({c['id']})" for c in subs)))
-
-
-def apply_registry(args):
-    """If args.capsule is set, fill capsule_id / process_name_suffix / tag from the registry
-    (explicit CLI values always win). Returns the resolved entry, or None."""
-    if not getattr(args, "capsule", None):
-        return None
-    e = resolve_capsule(args.capsule, getattr(args, "registry", None))
-    if not getattr(args, "capsule_id", None):
-        args.capsule_id = e["id"]
-    if getattr(args, "process_name_suffix", None) in (None, "") and e.get("suffix"):
-        args.process_name_suffix = e["suffix"]
-    if not getattr(args, "tag", None) and e.get("tags"):
-        args.tag = list(e["tags"])
-    print(f"[registry] {e['name']} -> capsule={args.capsule_id} suffix={args.process_name_suffix} "
-          f"tags={args.tag}", flush=True)
-    if e.get("required_data_type"):
-        print(f"[registry] required data type to attach: {e['required_data_type']}", flush=True)
-    if e.get("pre_attached_name"):
-        print(f"[registry] pre-attached (capsule default): {e['pre_attached_name']} ({e.get('pre_attached_id')})", flush=True)
-    return e
-
-
-# extend derived-name markers with every registry suffix, so raw-name stripping / dedup
-# prefix logic works for ANY workflow's output (HCR-ROI-label, ROICat, zdrift-qc, ...)
-try:
-    _reg0 = load_registry()
-    if _reg0:
-        _DERIVED_MARKERS = tuple(dict.fromkeys(
-            tuple(_DERIVED_MARKERS) + tuple("_" + c["suffix"] for c in _reg0["capsules"] if c.get("suffix"))))
-except Exception:
-    pass
-
 
 def raw_session_name(name):
     """Strip a derived tail so a _processed_/etc asset resolves to its raw name.
@@ -236,6 +162,125 @@ def resolve_result_name(args, base_name):
     if suffix and base_name:
         return f"{raw_session_name(base_name)}_{suffix}_{_now_ts(getattr(args, 'name_tz', 'UTC'))}"
     return None
+
+
+# ── registry (optional team coordination) ──────────────────────────────────────────
+def load_registry(registry_path):
+    """Load .co-registry.json (or dict with 'capsules' key)."""
+    with open(registry_path) as f:
+        return json.load(f)
+
+
+def lookup_capsule_in_registry(registry, capsule_name):
+    """Find capsule entry by friendly name. Returns dict or None."""
+    index = registry.get("_index_by_name", {})
+    if index:
+        return index.get(capsule_name)
+    # Fallback: linear search (slower but works without index)
+    for capsule in registry.get("capsules", []):
+        if capsule.get("name") == capsule_name:
+            return capsule
+    return None
+
+
+def apply_registry(args, registry):
+    """If --capsule (friendly name) is given, look it up and fill in --capsule-id, --process-name-suffix, --tag."""
+    capsule_name = getattr(args, "capsule", None)
+    if not capsule_name:
+        return
+    
+    entry = lookup_capsule_in_registry(registry, capsule_name)
+    if not entry:
+        sys.exit(f"ERROR: capsule {capsule_name!r} not found in registry. Available: "
+                f"{', '.join(c.get('name') for c in registry.get('capsules', []))}")
+    
+    if not args.capsule_id:
+        args.capsule_id = entry.get("id")
+        print(f"  registry: --capsule {capsule_name!r} -> --capsule-id {args.capsule_id}")
+    
+    if not getattr(args, "process_name_suffix", None) and entry.get("suffix"):
+        args.process_name_suffix = entry["suffix"]
+        print(f"  registry: --process-name-suffix {args.process_name_suffix}")
+    
+    if not getattr(args, "tag", None) and entry.get("tags"):
+        args.tag = entry["tags"]
+        print(f"  registry: auto-tags {args.tag}")
+
+
+def prompt_for_registry():
+    """Interactive prompt: ask if user has a lookup table, and help with setup."""
+    print()
+    print("╔══════════════════════════════════════════════════════════════════════════════╗")
+    print("║                       CAPSULE REGISTRY (Optional)                            ║")
+    print("╚══════════════════════════════════════════════════════════════════════════════╝")
+    print()
+    print("A registry is a JSON file that maps friendly capsule names to their UUIDs and")
+    print("standard processing conventions (suffix, tags, etc.). This enables your team to:")
+    print()
+    print("  • Use friendly names instead of UUIDs")
+    print("    e.g., --capsule lp-eye  (instead of --capsule-id 550e8400-...)")
+    print()
+    print("  • Auto-fill processing conventions")
+    print("    e.g., suffix and tags are auto-applied from the registry")
+    print()
+    print("  • Enforce team standards")
+    print("    Derived assets use consistent naming across team members")
+    print()
+    print("────────────────────────────────────────────────────────────────────────────────")
+    print()
+    
+    while True:
+        try:
+            response = input("Do you have a lookup table (XLSX/CSV) with capsule info? [y/n/skip]: ").strip().lower()
+        except EOFError:
+            # Non-interactive mode (CI/scripts)
+            return None
+        
+        if response in ("y", "yes"):
+            xlsx_path = input("  Path to XLSX file: ").strip()
+            if not Path(xlsx_path).exists():
+                print(f"  ❌ File not found: {xlsx_path}")
+                continue
+            
+            output_path = input("  Output registry path (default: .co-registry.json): ").strip() or ".co-registry.json"
+            
+            print()
+            print(f"  Generating registry from {xlsx_path} → {output_path}")
+            print()
+            
+            try:
+                import subprocess
+                from pathlib import Path as PathlibPath
+                
+                build_script = PathlibPath(__file__).parent / "build_registry.py"
+                result = subprocess.run(
+                    [sys.executable, str(build_script), xlsx_path, output_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+                
+                if result.returncode == 0:
+                    print(result.stdout)
+                    return output_path
+                else:
+                    print(f"  ❌ Error: {result.stderr}")
+                    continue
+            except Exception as e:
+                print(f"  ❌ Error: {e}")
+                continue
+        
+        elif response in ("n", "no"):
+            print()
+            print("  OK, we'll ask for parameters explicitly on each run.")
+            print()
+            return None
+        
+        elif response == "skip":
+            return None
+        
+        else:
+            print("  Please answer: y, n, or skip")
 
 
 # ── auth ──────────────────────────────────────────────────────────────────────────
@@ -495,10 +540,21 @@ def verify_applied_params(client, comp_id, intended):
 # ── subcommands ─────────────────────────────────────────────────────────────────────
 def cmd_describe_params(args):
     """Inspect a capsule/pipeline's parameter configuration and print how to pass params."""
+    from pathlib import Path as PathlibPath
+    
+    # Handle registry: load if provided
+    if args.registry:
+        if not PathlibPath(args.registry).exists():
+            sys.exit(f"ERROR: registry file not found: {args.registry}")
+        registry = load_registry(args.registry)
+        apply_registry(args, registry)
+    elif getattr(args, "capsule", None):
+        # User asked for --capsule lookup but no registry provided
+        sys.exit("ERROR: --capsule lookup requires --registry to be provided")
+    
     client = get_client(args)
-    apply_registry(args)   # allow --capsule <name|id>
     if not (args.capsule_id or args.pipeline_id):
-        sys.exit("ERROR: provide --capsule <name|id>, --capsule-id <id>, or --pipeline-id <id>.")
+        sys.exit("ERROR: provide --capsule-id <id> or --pipeline-id <id>.")
     tid, kind, reason = detect_target_kind(client, args.capsule_id, args.pipeline_id, args.kind)
     cfg = fetch_param_config(client, tid)
     mode = recommended_param_mode(kind, cfg)
@@ -525,9 +581,27 @@ def cmd_describe_params(args):
 
 def cmd_run(args):
     from codeocean.computation import RunParams, ComputationState
-    apply_registry(args)   # --capsule <name|id> -> fill capsule-id + suffix + tags from registry
+    from pathlib import Path as PathlibPath
+    
+    # Handle registry: load if provided, or ask user interactively
+    registry = None
+    if args.registry:
+        if not PathlibPath(args.registry).exists():
+            sys.exit(f"ERROR: registry file not found: {args.registry}")
+        registry = load_registry(args.registry)
+        apply_registry(args, registry)
+    elif getattr(args, "capsule", None):
+        # User asked for --capsule lookup but no registry provided
+        sys.exit("ERROR: --capsule lookup requires --registry to be provided")
+    elif not args.capsule_id and sys.stdin.isatty():
+        # Interactive mode: offer to set up registry
+        registry_path = prompt_for_registry()
+        if registry_path and PathlibPath(registry_path).exists():
+            registry = load_registry(registry_path)
+            args.registry = registry_path
+    
     if not (args.capsule_id or args.pipeline_id):
-        sys.exit("ERROR: provide --capsule <name|id> (registry), --capsule-id <id>, or --pipeline-id <id>.")
+        sys.exit("ERROR: provide --capsule-id <id> or --pipeline-id <id>.")
     client = get_client(args)
 
     data_assets = [parse_data_asset(s) for s in (args.data_asset or [])]
@@ -691,6 +765,10 @@ def build_parser():
     r = sub.add_parser("run", help="attach assets, run a capsule, optionally wait + capture")
     add_common_auth(r)
     r.add_argument("--capsule-id", default=None, help="target capsule id (or use --capsule to look it up)")
+    r.add_argument("--capsule", default=None, 
+                   help="friendly capsule name (looked up in --registry; auto-fills --capsule-id, --process-name-suffix, --tag)")
+    r.add_argument("--registry", default=None, 
+                   help="path to .co-registry.json (optional team registry for --capsule name lookups)")
     r.add_argument("--pipeline-id", default=None,
                    help="target PIPELINE id (runs via RunParams.pipeline_id; implies --kind pipeline)")
     r.add_argument("--kind", choices=["auto", "capsule", "pipeline"], default="auto",
@@ -699,9 +777,6 @@ def build_parser():
                    help="how to pass --param: auto picks named for pipelines / flat for capsules (default auto)")
     r.add_argument("--no-verify-params", action="store_true",
                    help="skip the post-submit check that requested parameter values actually applied")
-    r.add_argument("--capsule", default=None,
-                   help="capsule name or id; looks up capsule-id + suffix + result tags in capsule_registry.json")
-    r.add_argument("--registry", default=None, help="path to capsule_registry.json (default: skill dir)")
     r.add_argument("--data-asset", action="append", help="<asset_id>[:mount] (repeatable)")
     r.add_argument("--data-asset-name", action="append", help="<asset_name>[:mount], resolved via search (repeatable)")
     r.add_argument("--version", type=int, default=None, help="capsule/pipeline version (optional)")
@@ -712,8 +787,9 @@ def build_parser():
     r.add_argument("--wait", dest="wait", action="store_true", default=True)
     r.add_argument("--no-wait", dest="wait", action="store_false")
     r.add_argument("--capture", action="store_true", help="(direct mode) capture results as a data asset after completion")
-    r.add_argument("--monitor", action="store_true",
-                   help="run via the aind pipeline-monitor capsule (server-side run + capture)")
+    r.add_argument("--monitor", action=argparse.BooleanOptionalAction, default=True,
+                   help="run via the pipeline-monitor capsule (server-side run + capture). "
+                        "Default: enabled; use --no-monitor for direct API fallback.")
     r.add_argument("--monitor-capsule-id", default=DEFAULT_MONITOR_CAPSULE_ID,
                    help="pipeline-monitor capsule id (default: aind all-users monitor)")
     r.add_argument("--client-name", action="store_true",
@@ -746,10 +822,10 @@ def build_parser():
     d = sub.add_parser("describe-params",
                        help="inspect a capsule/pipeline's parameter configuration (flat vs named) + how to pass params")
     add_common_auth(d)
-    d.add_argument("--capsule-id", default=None, help="target capsule id")
+    d.add_argument("--capsule-id", default=None, help="target capsule id (or use --capsule to look it up)")
+    d.add_argument("--capsule", default=None, help="friendly capsule name (looked up in --registry)")
+    d.add_argument("--registry", default=None, help="path to .co-registry.json (optional team registry)")
     d.add_argument("--pipeline-id", default=None, help="target pipeline id")
-    d.add_argument("--capsule", default=None, help="capsule name or id (registry lookup)")
-    d.add_argument("--registry", default=None, help="path to capsule_registry.json (default: skill dir)")
     d.add_argument("--kind", choices=["auto", "capsule", "pipeline"], default="auto",
                    help="target type; 'auto' detects capsule vs pipeline (default auto)")
     d.set_defaults(func=cmd_describe_params, process_name_suffix=None, tag=None)

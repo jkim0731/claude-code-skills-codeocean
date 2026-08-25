@@ -24,14 +24,14 @@
 #   ./run_per_session.sh cohort.csv                 # COLUMN picks the session column
 #   SESSIONS="name1 name2" ./run_per_session.sh
 #   DRY_RUN=1 ./run_per_session.sh cohort.csv
-#   USE_MONITOR=1 WAIT=0 ./run_per_session.sh sessions.txt   # server-side fire-and-forget
+#   WAIT=0 ./run_per_session.sh sessions.txt        # monitor-mode fire-and-forget (default mode)
 #
 # Auth: token from $CODEOCEAN_TOKEN/$API_SECRET (+ $CODEOCEAN_DOMAIN). Billable.
 
 set -u -o pipefail
 
 # ------------------------------- CONFIG (edit me) -------------------------------
-CAPSULE_ID="${CAPSULE_ID:-54a4898c-01a0-4710-be33-4a528bc8b4b4}"   # e.g. LP eye-tracking
+CAPSULE_ID="${CAPSULE_ID:-}"   # required: set target capsule id
 
 # Per-session assets to attach. Templates; {s} is replaced with the session name.
 # Attach any combination the task needs (resolved by name -> newest Ready match):
@@ -45,18 +45,15 @@ SESSION_ASSETS=(
 )
 
 # Fixed assets attached to EVERY run, by literal NAME (models, coreg-id-table, ...):
-FIXED_ASSETS=(
-  "lightningPose-eye-model_multiplane-ophys-raw-video_2026-07-11"
-  "lightningPose-eye-model_multiplane-ophys-clahe-video_2026-07-11"
-)
+FIXED_ASSETS=()
 
 PROCESS_SUFFIX="${PROCESS_SUFFIX:-lp-eye}"     # captured name = <raw session>_<suffix>_<capture date_time>
 TAGS=(derived multiplane-ophys lp-eye)
 COMMON_META=("experiment type=multiplane-ophys" "data level=derived")
 
-USE_MONITOR="${USE_MONITOR:-0}"   # 1 = via aind pipeline-monitor capsule (server-side capture-time naming)
+USE_MONITOR="${USE_MONITOR:-1}"   # 1 = via pipeline-monitor capsule (server-side capture-time naming)
 FORCE_RAW_NAME="${FORCE_RAW_NAME:-0}"  # (monitor only) 1 = force raw-stripped name client-side (SUBMIT time)
-WAIT="${WAIT:-1}"                 # 1 = wait per job (throttled + pass/fail); 0 = fire-and-forget
+WAIT="${WAIT:-0}"                 # 1 = wait per job (throttled + pass/fail); 0 = fire-and-forget
 MAX_JOBS="${MAX_JOBS:-4}"
 DRY_RUN="${DRY_RUN:-0}"
 
@@ -71,8 +68,10 @@ TOOL="$SCRIPT_DIR/scripts/co_run_capture.py"
 READER="$SCRIPT_DIR/scripts/read_items.py"
 LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/logs_per_session}"
 STATUS_DIR="$LOG_DIR/status"
-mkdir -p "$STATUS_DIR"
+TRACKING_DIR="${TRACKING_DIR:-$SCRIPT_DIR/tracking}"
+mkdir -p "$STATUS_DIR" "$TRACKING_DIR"
 [[ -f "$TOOL" ]] || { echo "ERROR: tool not found at $TOOL" >&2; exit 1; }
+[[ -n "$CAPSULE_ID" ]] || { echo "ERROR: set CAPSULE_ID before running." >&2; exit 2; }
 
 read_list() {
   python3 "$READER" "$1" ${COLUMN:+--column "$COLUMN"} \
@@ -96,6 +95,12 @@ echo "Mode:          $mode   Wait: $WAIT   Max parallel: $MAX_JOBS   Dry run: $D
 echo "Sessions:      ${#sessions[@]}   Suffix: $PROCESS_SUFFIX"
 echo "Session assets:${SESSION_ASSETS[*]:-(none)}"
 echo "Fixed assets:  ${FIXED_ASSETS[*]:-(none)}"
+echo
+
+# Initialize tracking file with header
+TRACKING_FILE="$TRACKING_DIR/sessions_$(date +%Y%m%d_%H%M%S).csv"
+echo "item,computation_id,capsule_id,state,submitted_ts" > "$TRACKING_FILE"
+echo "Tracking jobs -> $TRACKING_FILE"
 echo
 
 subject_of() { echo "$1" | grep -oE '_[0-9]{6}_' | head -1 | tr -d '_' || true; }
@@ -127,8 +132,18 @@ run_one() {
     printf '[DRY] '; printf '%q ' "${cmd[@]}"; printf '\n'; echo dry > "$STATUS_DIR/$safe"; return 0
   fi
   echo "[start] $sess  -> $log"
-  if "${cmd[@]}" > "$log" 2>&1; then echo "[ok]    $sess"; echo ok > "$STATUS_DIR/$safe"
-  else echo "[FAIL]  $sess  (see $log)"; echo fail > "$STATUS_DIR/$safe"; fi
+  if output=$("${cmd[@]}" 2>&1); then
+    echo "[ok]    $sess"; echo ok > "$STATUS_DIR/$safe"
+    # Extract computation ID (last line of output)
+    comp_id=$(echo "$output" | tail -1)
+    if [[ -n "$comp_id" ]] && [[ ${#comp_id} -eq 36 ]]; then
+      echo "$sess,$comp_id,$CAPSULE_ID,submitted,$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$TRACKING_FILE"
+    fi
+    echo "$output" >> "$log"
+  else
+    echo "[FAIL]  $sess  (see $log)"; echo fail > "$STATUS_DIR/$safe"
+    echo "$output" >> "$log"
+  fi
 }
 
 for sess in "${sessions[@]}"; do
@@ -141,4 +156,10 @@ verb="completed"; [[ "$WAIT" == "1" ]] || verb="submitted"
 n_ok=$(grep -lx ok   "$STATUS_DIR"/* 2>/dev/null | wc -l)
 n_fail=$(grep -lx fail "$STATUS_DIR"/* 2>/dev/null | wc -l)
 echo; echo "==== per-session summary: $n_ok $verb, $n_fail failed, ${#sessions[@]} total ===="
-if (( n_fail > 0 )); then echo "failed:"; grep -lx fail "$STATUS_DIR"/* 2>/dev/null | sed 's#.*/##'; exit 1; fi
+if (( n_fail > 0 )); then echo "failed:"; grep -lx fail "$STATUS_DIR"/* 2>/dev/null | sed 's#.*/##'; fi
+echo
+echo "Tracking file: $TRACKING_FILE"
+if [[ "$WAIT" == "0" ]]; then
+  echo "To monitor jobs in background:"
+  echo "  nohup ./track-jobs.sh '$TRACKING_FILE' > track.log 2>&1 &"
+fi

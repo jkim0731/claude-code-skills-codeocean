@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+logs_per_session/
+logs_per_subject/
+tracking/
+.co-registry.json

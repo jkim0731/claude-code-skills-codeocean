@@ -1,136 +1,239 @@
 ---
 name: codeocean-run-capture
-description: Run a Code Ocean capsule or pipeline with attached data assets and capture its results as a named, tagged data asset. Use when asked to launch a CO capsule, attach data assets to a run, batch-run a capsule over sessions, or register/capture computation results as a data asset with specific tags/name/metadata (Allen Neural Dynamics or any Code Ocean deployment).
+description: Run a Code Ocean capsule or pipeline with attached data assets and capture results as a named/tagged data asset. Use for launching CO runs and capturing outputs.
 ---
 
 # Code Ocean: Run & Capture
 
-Self-contained tooling to **attach data assets → run a capsule → capture results
-as a data asset** (with a specific name, tags, and custom metadata), using the
-`codeocean` python client directly. No `lamf_analysis` / `aind-*` dependencies.
+Use this skill to attach input assets, run a capsule/pipeline, and capture results.
 
-## When to use
-- "Run capsule X on session Y and save the output as a data asset."
-- "Attach these assets to the capsule and launch it."
-- "Capture the results of computation Z as a tagged data asset."
-- Batch/session-level runs (loop the `run` command over sessions).
+Captured assets follow the Allen Institute / Neural Dynamics naming pattern:
 
-## Prerequisites
-- `pip install codeocean` (only dependency).
-- An API token in the environment (checked in order): `$CODEOCEAN_TOKEN`,
-  `$API_SECRET`, `$CO_TOKEN`, `$CUSTOM_KEY` — or pass `--token`.
-- Domain from `$CODEOCEAN_DOMAIN` or `--domain` (defaults to the AIND deployment).
-- Network egress to the Code Ocean API host.
-
-## How to run it
-The tool is `scripts/co_run_capture.py`. Invoke with Bash:
-
-```bash
-python "$CLAUDE_SKILL_DIR/scripts/co_run_capture.py" <subcommand> [options]
+```
+<session>_<workflow-suffix>_<timestamp>
 ```
 
-(If running outside Claude, just use the path to the script.)
+Example: `multiplane-ophys_779891_2025-03-21_14-14-28_lp-eye_2025-04-01_10-00-00`
 
-### Subcommands
-- `find-asset --name <substr>` — search data assets, print `id  state  name`.
-- `describe-params (--capsule-id <id> | --pipeline-id <id> | --capsule <name>)` —
-  inspect the target's **parameter configuration**: capsule vs pipeline, app-panel
-  params (`param_name`/default), and whether to pass them **flat** or **named**.
-- `run (--capsule-id <id> | --pipeline-id <id>) [--kind auto|capsule|pipeline]
-   [--param-mode auto|flat|named] [--data-asset <id>[:mount] ...] [--data-asset-name <name>[:mount] ...]
-   [--param V] [--named-param k=v] [--wait|--no-wait]
-   [--capture --result-name <name> --tag T --meta k=v --result-mount M --result-path P]`
-- `capture --computation-id <id> --result-name <name> [--tag T --meta k=v ...]`
+The workflow suffix (e.g., `lp-eye`, `rorcat`) tells you what processing was done.
+Use a registry to standardize these across your team.
+
+## Default behavior
+
+`run` uses **monitor mode by default**.
+
+```bash
+python "$CLAUDE_SKILL_DIR/scripts/co_run_capture.py" run \
+  --capsule-id <target_capsule_id> \
+  --data-asset-name <input_asset_name> \
+  --process-name-suffix <suffix> \
+  --tag derived
+```
+
+For long jobs, prefer fire-and-forget:
+
+```bash
+python "$CLAUDE_SKILL_DIR/scripts/co_run_capture.py" run --no-wait \
+  --capsule-id <target_capsule_id> \
+  --data-asset-name <input_asset_name> \
+  --process-name-suffix <suffix> \
+  --tag derived
+```
+
+## Fallback policy
+
+Use direct Code Ocean API mode only when monitor mode fails for the specific run.
+Fallback instructions are in [API_FALLBACK.md](API_FALLBACK.md).
+
+**Note on sharing**: When using direct mode, the script can't auto-share captured assets. You'll see:
+
+```
+WARNING: could not set sharing (everyone=viewer): 403 Client Error: Forbidden
+```
+
+The asset was created fine. Just share it manually in Code Ocean:
+1. Go to the asset
+2. Click Share → Add permissions
+3. Select "Everyone" as "Viewer"
+
+## Common commands
+
+- `find-asset --name <substr>`
+- `describe-params --capsule-id <id>`
+- `run --capsule-id <id> ...`
+- `capture --computation-id <id> --result-name <name>`
 - `status --computation-id <id>`
 
-### Parameter configuration — CHECK IT FIRST (flat vs named)
-Capsules and pipelines take parameters **differently, and a pipeline SILENTLY
-IGNORES flat positional `--param`** (the run "succeeds" on defaults — e.g.
-`acquisition_data_type` stays `single`, not the `multiplane` you meant). Before
-running an unfamiliar target, inspect it:
+## Parameter safety
+
+Always inspect parameter mode first:
 
 ```bash
 python "$CLAUDE_SKILL_DIR/scripts/co_run_capture.py" describe-params --capsule-id <id>
 ```
 
-`run` handles this automatically: `--kind auto` detects capsule vs pipeline (a
-pipeline has a `versions` array and no `cloned_from_url`), `--param-mode auto` uses
-**named** params for pipelines / **flat** for capsules (flat `--param` values are
-auto-mapped onto the pipeline's app-panel `param_name`s by order), pipelines are
-submitted via `pipeline_id`, and after submit the tool **verifies** the requested
-values actually landed (warns on mismatch; `--no-verify-params` to skip). Fixed
-pipeline assets (models/schemas) attach automatically — pass only the variable
-input(s), or the API rejects the run with *"data asset already attached"*.
+Pipelines require named parameters. Use `--named-param key=value` when uncertain.
 
-### Typical flow
-1. Resolve asset ids: `find-asset --name <session_or_model>`.
-2. Run + capture (waits for completion, then registers results):
+## Batch helpers
 
-```bash
-python scripts/co_run_capture.py run \
-  --capsule-id 54a4898c-01a0-4710-be33-4a528bc8b4b4 \
-  --data-asset <session_id>:<session_mount> \
-  --data-asset <raw_model_id>:lightningPose-eye-model_multiplane-ophys-raw-video_2026-07-11 \
-  --data-asset <clahe_model_id>:lightningPose-eye-model_multiplane-ophys-clahe-video_2026-07-11 \
-  --wait --capture \
-  --result-name lightningPose-eye-tracking_<session> \
-  --tag derived --tag multiplane-ophys --tag lp-eye --tag <subject_id> \
-  --meta "data level=derived" --meta "experiment type=multiplane-ophys" --meta "subject id=<subject_id>"
-```
+- `run_per_session.sh`: one run per session (monitor-first).
+- `run_per_subject.sh`: one run per subject.
 
-For long runs you can `--no-wait`, note the printed computation id, and `capture`
-it later.
+Both accept either plain-text lists or CSV input.
 
-### Monitor mode (server-side run + capture)
-Add `--monitor` to hand the whole job to the AIND pipeline-monitor capsule
-(`567b5b98-8d41-413b-9375-9ca610ca2fd3`), mirroring the `Jinho_pipeline-monitor`
-pattern: it serializes `PipelineMonitorSettings` (`run_params` + `capture_settings`)
-to a JSON string and launches the monitor capsule with it; the monitor runs the
-target and captures results **server-side** (best for long runs; use `--no-wait`
-to fire-and-forget). The JSON parameter is capped at 4096 chars (the tool
-enforces it); `mount` is omitted so assets mount under their own names.
+### Automatic job tracking with smart polling
+
+Both scripts automatically **write computation IDs to a tracking file** as jobs are submitted.
+Use `track-jobs.sh` to poll job status in the background with **intelligent poll intervals**:
 
 ```bash
-python "$CLAUDE_SKILL_DIR/scripts/co_run_capture.py" run --monitor --no-wait \
-  --capsule-id <target> --data-asset-name <session> \
-  --data-asset-name <model_a> --data-asset-name <model_b> \
-  --process-name-suffix lp-eye --tag derived --tag lp-eye
+# After running with --no-wait (default)
+./run_per_session.sh sessions.txt
+# Output: Tracking jobs -> tracking/sessions_20260825_162500.csv
+
+# In another terminal, poll for completion:
+# Poll interval auto-calculated from capsule history (or 180s default)
+nohup ./track-jobs.sh tracking/sessions_20260825_162500.csv > track.log 2>&1 &
+
+# Or manually check once:
+./track-jobs.sh tracking/sessions_20260825_162500.csv
+
+# Specify capsule ID explicitly (if auto-detect fails):
+./track-jobs.sh tracking/sessions_20260825_162500.csv --capsule-id <id>
+
+# Override poll interval (seconds):
+./track-jobs.sh tracking/sessions_20260825_162500.csv --poll 600
+# or use env var:
+POLL=600 ./track-jobs.sh tracking/sessions_20260825_162500.csv
 ```
 
-### Captured-asset naming — CAPTURE time
-Name = `<raw input name>_<process-name-suffix>_<date>_<time>`, raw base (derived
-tails like `*_processed_*` stripped). The timestamp reflects **capture time**:
-built post-completion in direct mode; named server-side by the monitor in monitor
-mode (uses the capsule's `data_description.json` when present). `--client-name`
-forces a client-side raw name (submit-time) if needed; `--result-name` overrides.
+**Tracking file format (CSV)**:
+- `item`: session or subject name
+- `computation_id`: the 36-char UUID returned by co_run_capture.py
+- `capsule_id`: the capsule id (for poll interval estimation)
+- `state`: `submitted`, `completed`, `failed`
+- `submitted_ts`: ISO 8601 timestamp
 
-### Sharing (default: shared)
-Direct-mode captures are **shared with everyone as `viewer` by default** — matching the Code
-Ocean UI capture default (the owner is kept):
-`update_permissions(id, Permissions(everyone=Viewer))`, verifiable via
-`GET data_assets/{id}/permissions`. Pass `--private` to keep it private, or `--share-role
-discoverable|none`. (In `--monitor` mode the aind pipeline-monitor controls capture/sharing.)
+**Poll interval strategy**:
+- If `--poll <seconds>` is passed or `POLL` env var is set, use that explicitly.
+- Otherwise, `track-jobs.sh` looks up the capsule's run history from `/scratch/tmp/run-history.json`.
+- Sets poll interval to `max(median(previous_runs) / 2, 180 seconds)`.
+- If no history exists, defaults to 180 seconds (3 minutes).
+- Automatically records each job's duration when it completes, so the next run polls smarter.
+- **Note**: Run history is temporary (per-session in `/scratch/tmp/`); it's learning data to optimize future polling.
 
-### Two orchestration scripts (sessions/subjects from a list OR a CSV column)
-- **PER-SESSION** — `run_per_session.sh sessions.txt|cohort.csv`: one run per
-  session. Config `SESSION_ASSETS` (per-session templates, `{s}`=session) +
-  `FIXED_ASSETS` attach any combination — raw ophys `"{s}"`, processed ophys
-  `"{s}_processed"`, eye-tracking `"{s}_lp-eye"`, processed-behavior
-  `"{s}_processed-behavior"`, models/coreg-id-table (literal). `USE_MONITOR=1 WAIT=0`
-  = server-side fire-and-forget. CSV: `COLUMN` (default `session`), optional
-  `INCLUDE_COLUMN`/`INCLUDE_VALUE`.
-- **PER-SUBJECT** — `run_per_subject.sh subjects.txt|cohort.csv`: one run over ALL
-  of a subject's sessions. Fires a subject-level capsule with a `subject_id` named
-  param (default: ROICaT monitor `d6c4c877…` → gathers sessions, runs ROICaT
-  `0f51d117`). `NAMED_PARAMS` + `SUBJECT_ASSETS` (`{subj}` templates, e.g.
-  `coreg-id-table_{subj}`, `HCR_{subj}`) + `FIXED_ASSETS` cover HCR / coregistration.
+## Known gotchas
+
+### Wrong capture name when capsule writes its own `data_description.json`
+
+When a capsule calls `process_json_files` (AIND convention), it writes a
+`data_description.json` into results. The monitor reads this file and uses that name
+as the captured asset name — **do NOT also pass `--process-name-suffix`**.
+
+`--process-name-suffix` makes the monitor use the **input data asset name** (not
+`data_description.json`) as the base, then appends the suffix. For pipelines with
+intermediate steps this embeds the intermediate step name in the output:
+
+```bash
+# BAD — input asset name is used as base → intermediate step leaks in
+run --monitor ... \
+  --data-asset-name "multiplane-ophys_..._cortical-zstack-registration_<ts>" \
+  --process-name-suffix cortical-zstack-segmentation
+# → name: multiplane-ophys_..._cortical-zstack-registration_<ts>_cortical-zstack-segmentation_<ts2>
+
+# GOOD — omit --process-name-suffix; the capsule's data_description.json is authoritative
+# → name: multiplane-ophys_..._cortical-zstack-segmentation_<ts>  (correct two-part form)
+run --monitor ... \
+  --data-asset-name "multiplane-ophys_..._cortical-zstack-registration_<ts>" \
+  --tag derived --tag cortical-zstack-segmentation --tag <subject_id>
+```
+
+**Rule**: if the capsule's `run_capsule.py` calls `process_json_files(...)` or writes
+`data_description.json` itself, **always omit `--process-name-suffix`**. Pass it only
+for capsules that do not write their own `data_description.json`.
+
+### Flat `--param` silently ignored by capsules using `--flag` style argparse
+
+When a capsule uses `argparse` with named flags (`--roi_diameter`, `--xy_resolution`,
+etc.), Code Ocean receives flat positional values from `--param` but the script's
+argparse does not map them — all flags fall back to their defaults silently.
+
+```bash
+# BAD — roi_diameter won't be set
+run --monitor --capsule-id 0a174d03-... --param 30 --param 0.78125 ...
+
+# GOOD — use --named-param
+run --monitor --capsule-id 0a174d03-... \
+  --named-param roi_diameter=30 --named-param xy_resolution=0.78125 ...
+```
+
+**Rule**: always use `--named-param key=value` for capsule parameters.
+
+## Team Capsule Registry (Optional)
+
+A **registry** is an optional JSON file (`.co-registry.json`) that maps friendly capsule names to their UUIDs and standard processing conventions. This enables your team to:
+
+- **Use friendly names** instead of UUIDs  
+  e.g., `--capsule lp-eye` (instead of `--capsule-id 550e8400-...`)
+
+- **Auto-fill conventions**  
+  e.g., `--process-name-suffix` and `--tag` are auto-applied from the registry
+
+- **Enforce team standards**  
+  Derived assets use consistent naming across team members, so downstream analysis scripts can reliably find them
+
+### Generate a registry from your XLSX capsule info
+
+If your team maintains a capsule info spreadsheet (e.g., `CO_capsule_infos_*.xlsx`):
+
+```bash
+# Convert your XLSX → .co-registry.json (one-time setup)
+python scripts/build_registry.py /path/to/CO_capsule_infos_*.xlsx .co-registry.json
+
+# The registry file is auto-added to .gitignore (not tracked in git)
+# Regenerate it whenever your XLSX updates:
+git pull
+python scripts/build_registry.py /path/to/CO_capsule_infos_*.xlsx .co-registry.json
+```
+
+### Use the registry in commands
+
+```bash
+# With registry: friendly names + auto-filled conventions
+python co_run_capture.py run --registry .co-registry.json --capsule lp-eye \
+  --data-asset-name multiplane-ophys_779891_2025-03-21 ...
+
+# The registry auto-fills:
+#   --capsule-id 550e8400-...
+#   --process-name-suffix lp-eye
+#   --tag lp-eye --tag derived
+
+# Without registry: explicitly pass everything
+python co_run_capture.py run \
+  --capsule-id 550e8400-... \
+  --data-asset-name multiplane-ophys_779891_2025-03-21 ...
+```
+
+### Interactive setup (first run)
+
+If you run `co_run_capture.py` without a registry (and not in a script), you'll be prompted:
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                       CAPSULE REGISTRY (Optional)                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+A registry is a JSON file that maps friendly capsule names to their UUIDs...
+
+Do you have a lookup table (XLSX/CSV) with capsule info? [y/n/skip]:
+```
+
+- **y**: Provide the XLSX path; the registry will be generated for you
+- **n**: Skip registry; you'll provide all parameters explicitly
+- **skip**: Don't ask again for this run
 
 ## Guardrails
-- Launching a run and creating data assets are outward-facing, billable actions.
-  Confirm the capsule id, asset ids/mounts, result name and tags with the user
-  before running, unless they've said to proceed.
-- Mounts matter: attach each asset at the mount path the target capsule expects
-  (e.g. it may glob on the asset/dir name).
 
-See `README.md` for install, auth details, and how this maps to the AIND
-pipeline-monitor pattern.
+- Running capsules and creating assets are billable actions.
+- Confirm capsule id, inputs, result naming, and tags before running unless user already approved.
+- Ensure mounts match what the target capsule expects.

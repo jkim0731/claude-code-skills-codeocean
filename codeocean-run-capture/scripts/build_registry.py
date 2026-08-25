@@ -1,60 +1,96 @@
-"""Build a machine-readable capsule registry from the CO capsule-info spreadsheet.
-
-Reads the 'processing' sheet (capsule id / suffix / result tags / required data type /
-pre-attached asset) and writes capsule_registry.json next to the skill. co_run_capture
-and batch_monitor read it so `--capsule <name-or-id>` auto-fills capsule-id, the
-process-name-suffix, and the result tags — instead of hand-specifying them per run.
-
-Usage: python build_registry.py [XLSX] [OUT_JSON]
+#!/usr/bin/env python3
 """
-import sys, json, pathlib, math
-import pandas as pd
+Generate .co-registry.json from a capsule info XLSX file.
 
-XLSX = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path("/root/capsule/code/CO_capsule_infos_260723.xlsx")
-OUT  = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else pathlib.Path(__file__).parent.parent / "capsule_registry.json"
+A registry is a JSON file that maps friendly capsule names to their UUIDs and
+standard processing conventions (suffix, tags, etc.). This enables teams to
+enforce naming standards without hardcoding personal data in the skill.
 
-def s(v):
-    if v is None or (isinstance(v, float) and math.isnan(v)): return None
-    v = str(v).strip()
-    return v or None
+Usage:
+  python build_registry.py /path/to/CO_capsule_infos.xlsx .co-registry.json
 
-def split_tags(v):
-    v = s(v)
-    return [t.strip() for t in v.split(";") if t.strip()] if v else []
+The XLSX file should have a 'processing' sheet with columns:
+  - capsule name: friendly name (used for --capsule lookups)
+  - capsule id: UUID
+  - suffix: standard suffix for derived assets (e.g., 'lp-eye', 'rorcat')
+  - result tags: semicolon-separated tags to auto-apply to results
+  - Type: capsule type (for documentation)
+  - required data type: input data type requirement
+  - pre-attached data asset name: (optional) baked-in asset reference
+"""
+from __future__ import annotations
 
-def norm(name):
-    return s(name).lower().replace("'", "").replace("  ", " ") if s(name) else None
+import argparse
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
 
-df = pd.read_excel(XLSX, sheet_name="processing")
-capsules, monitors = [], []
-for _, r in df.iterrows():
-    cid = s(r.get("capsule id")); name = s(r.get("capsule name"))
-    if not cid or not name:
-        continue
-    typ = s(r.get("Type")) or ""
-    entry = {
-        "name": name, "id": cid, "type": typ, "shared": s(r.get("shared")),
-        "suffix": s(r.get("suffix")),
-        "tags": split_tags(r.get("result tags")),
-        "required_data_type": s(r.get("required data type")),
-        "pre_attached_name": s(r.get("pre-attached data asset name")),
-        "pre_attached_id": s(r.get("pre-attached data asset id")),
-        "git": s(r.get("Git link")), "note": s(r.get("Note")),
+
+def build_registry(xlsx_path: str, output_path: str) -> None:
+    """Convert XLSX → .co-registry.json"""
+    try:
+        import pandas as pd
+    except ImportError:
+        print("ERROR: pandas not installed. Install with: pip install pandas openpyxl")
+        sys.exit(1)
+
+    xlsx_path_obj = Path(xlsx_path)
+    if not xlsx_path_obj.exists():
+        print(f"ERROR: XLSX file not found: {xlsx_path}")
+        sys.exit(1)
+
+    try:
+        df = pd.read_excel(xlsx_path, sheet_name='processing')
+    except Exception as e:
+        print(f"ERROR: Could not read 'processing' sheet from {xlsx_path}: {e}")
+        sys.exit(1)
+
+    capsules = []
+    for idx, row in df.iterrows():
+        capsule = {
+            "name": row.get('capsule name'),
+            "id": row.get('capsule id'),
+            "type": row.get('Type'),
+            "suffix": row.get('suffix') if pd.notna(row.get('suffix')) else None,
+            "tags": (
+                [t.strip() for t in str(row.get('result tags', '')).split(';') if t.strip()]
+                if pd.notna(row.get('result tags'))
+                else []
+            ),
+            "required_data_type": row.get('required data type') if pd.notna(row.get('required data type')) else None,
+            "pre_attached_name": row.get('pre-attached data asset name') if pd.notna(row.get('pre-attached data asset name')) else None,
+        }
+        capsules.append(capsule)
+
+    # Build lookup indices for fast queries
+    index_by_id = {c["id"]: c for c in capsules if c["id"]}
+    index_by_name = {c["name"]: c for c in capsules if c["name"]}
+
+    registry = {
+        "source": str(xlsx_path_obj.absolute()),
+        "generated_at": datetime.now().isoformat(),
+        "capsule_count": len(capsules),
+        "capsules": capsules,
+        "_index_by_id": index_by_id,
+        "_index_by_name": index_by_name,
     }
-    (monitors if "pipeline-monitor" in typ.lower() else capsules).append(entry)
 
-# lookup indices: by id and by normalized name
-by_id = {c["id"]: c for c in capsules}
-by_name = {norm(c["name"]): c for c in capsules}
-reg = {
-    "source": str(XLSX), "n_capsules": len(capsules), "n_monitors": len(monitors),
-    "capsules": capsules, "monitors": monitors,
-    "index_by_id": by_id, "index_by_name": by_name,
-}
-OUT.write_text(json.dumps(reg, indent=2))
-runnable = [c for c in capsules if c["suffix"] or c["tags"]]
-print(f"wrote {OUT}")
-print(f"  {len(capsules)} capsules ({len(runnable)} runnable w/ suffix+tags), {len(monitors)} pipeline-monitors")
-print("\nRunnable capsules (name | id | suffix | tags | required_data_type):")
-for c in runnable:
-    print(f"  {c['name'][:38]:38s} | {c['id'][:8]} | {str(c['suffix']):26s} | {';'.join(c['tags'])[:30]:30s} | {c['required_data_type']}")
+    with open(output_path, 'w') as f:
+        json.dump(registry, f, indent=2)
+
+    print(f"✅ Registry generated: {output_path} ({len(capsules)} capsules)")
+    print(f"   Source: {xlsx_path}")
+    print(f"   Use with: python co_run_capture.py run --registry {output_path} --capsule <name> ...")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument('xlsx_path', help='Path to CO_capsule_infos*.xlsx file')
+    parser.add_argument('output_path', help='Output .co-registry.json path')
+    args = parser.parse_args()
+
+    build_registry(args.xlsx_path, args.output_path)

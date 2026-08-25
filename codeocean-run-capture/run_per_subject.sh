@@ -2,9 +2,8 @@
 # run_per_subject.sh — PER-SUBJECT approach.
 #
 #   >>> Runs ONE capsule per SUBJECT, over ALL of that subject's sessions. <<<
-#   Default target: the ROICaT monitor capsule d6c4c877 ("Jinho_pipeline_monitor_
-#   ROICat"), fired with a `subject_id` NAMED parameter; it internally gathers the
-#   subject's processed ophys sessions, runs ROICaT (0f51d117) across them, and
+#   Default target: a subject-level monitor capsule fired with a `subject_id`
+#   NAMED parameter; it can gather a subject's sessions, run the target compute,
 #   captures results (capture-time naming server-side). No 4096-char JSON limit.
 #
 # Which subjects to run: a plain list (one subject id per line) OR a CSV column
@@ -28,10 +27,9 @@
 set -u -o pipefail
 
 # ------------------------------- CONFIG (edit me) -------------------------------
-CAPSULE_ID="${CAPSULE_ID:-d6c4c877-9755-4837-9322-3cd9d562ad8b}"   # ROICaT monitor (subject-level)
+CAPSULE_ID="${CAPSULE_ID:-}"   # required: set subject-level capsule id
 
-# NAMED parameters for that capsule (subject_id is added per-subject). Defaults
-# match the ROICaT monitor's app panel; edit for HCR / coregistration capsules.
+# NAMED parameters for that capsule (subject_id is added per-subject).
 NAMED_PARAMS=(
   "dff_long_window=1800"
   "max_jobs=10"
@@ -40,8 +38,8 @@ NAMED_PARAMS=(
   "ignore_not_processed=1"
 )
 
-# Per-subject assets to attach (templates; {subj}=subject id). Usually empty for
-# ROICaT. Examples for other tasks:
+# Per-subject assets to attach (templates; {subj}=subject id). Usually empty.
+# Examples for other tasks:
 #   "coreg-id-table_{subj}"   coregistration id table
 #   "HCR_{subj}"              HCR raw asset(s)
 SUBJECT_ASSETS=()
@@ -64,8 +62,10 @@ TOOL="$SCRIPT_DIR/scripts/co_run_capture.py"
 READER="$SCRIPT_DIR/scripts/read_items.py"
 LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/logs_per_subject}"
 STATUS_DIR="$LOG_DIR/status"
-mkdir -p "$STATUS_DIR"
+TRACKING_DIR="${TRACKING_DIR:-$SCRIPT_DIR/tracking}"
+mkdir -p "$STATUS_DIR" "$TRACKING_DIR"
 [[ -f "$TOOL" ]] || { echo "ERROR: tool not found at $TOOL" >&2; exit 1; }
+[[ -n "$CAPSULE_ID" ]] || { echo "ERROR: set CAPSULE_ID before running." >&2; exit 2; }
 
 read_list() {
   python3 "$READER" "$1" ${COLUMN:+--column "$COLUMN"} \
@@ -89,6 +89,12 @@ echo "Subject assets:${SUBJECT_ASSETS[*]:-(none)}   Fixed assets: ${FIXED_ASSETS
 echo "Subjects:      ${#subjects[@]}   Wait: $WAIT   Max parallel: $MAX_JOBS   Dry run: $DRY_RUN"
 echo
 
+# Initialize tracking file with header
+TRACKING_FILE="$TRACKING_DIR/subjects_$(date +%Y%m%d_%H%M%S).csv"
+echo "item,computation_id,capsule_id,state,submitted_ts" > "$TRACKING_FILE"
+echo "Tracking jobs -> $TRACKING_FILE"
+echo
+
 run_one() {
   local subj="$1"
   local safe="${subj//\//_}"
@@ -104,8 +110,18 @@ run_one() {
     printf '[DRY] '; printf '%q ' "${cmd[@]}"; printf '\n'; echo dry > "$STATUS_DIR/$safe"; return 0
   fi
   echo "[start] subject $subj  -> $log"
-  if "${cmd[@]}" > "$log" 2>&1; then echo "[ok]    subject $subj"; echo ok > "$STATUS_DIR/$safe"
-  else echo "[FAIL]  subject $subj  (see $log)"; echo fail > "$STATUS_DIR/$safe"; fi
+  if output=$("${cmd[@]}" 2>&1); then
+    echo "[ok]    subject $subj"; echo ok > "$STATUS_DIR/$safe"
+    # Extract computation ID (last line of output)
+    comp_id=$(echo "$output" | tail -1)
+    if [[ -n "$comp_id" ]] && [[ ${#comp_id} -eq 36 ]]; then
+      echo "$subj,$comp_id,$CAPSULE_ID,submitted,$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$TRACKING_FILE"
+    fi
+    echo "$output" >> "$log"
+  else
+    echo "[FAIL]  subject $subj  (see $log)"; echo fail > "$STATUS_DIR/$safe"
+    echo "$output" >> "$log"
+  fi
 }
 
 for subj in "${subjects[@]}"; do
@@ -118,4 +134,10 @@ verb="completed"; [[ "$WAIT" == "1" ]] || verb="submitted"
 n_ok=$(grep -lx ok   "$STATUS_DIR"/* 2>/dev/null | wc -l)
 n_fail=$(grep -lx fail "$STATUS_DIR"/* 2>/dev/null | wc -l)
 echo; echo "==== per-subject summary: $n_ok $verb, $n_fail failed, ${#subjects[@]} total ===="
-if (( n_fail > 0 )); then echo "failed:"; grep -lx fail "$STATUS_DIR"/* 2>/dev/null | sed 's#.*/##'; exit 1; fi
+if (( n_fail > 0 )); then echo "failed:"; grep -lx fail "$STATUS_DIR"/* 2>/dev/null | sed 's#.*/##'; fi
+echo
+echo "Tracking file: $TRACKING_FILE"
+if [[ "$WAIT" == "0" ]]; then
+  echo "To monitor jobs in background:"
+  echo "  nohup ./track-jobs.sh '$TRACKING_FILE' > track.log 2>&1 &"
+fi

@@ -298,18 +298,14 @@ def submit(client, args, item):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--capsule-id", default=None, help="TARGET capsule id (or use --capsule to look it up)")
-    ap.add_argument("--capsule", default=None,
-                    help="capsule name or id; looks up capsule-id + suffix + result tags in capsule_registry.json")
-    ap.add_argument("--registry", default=None, help="path to capsule_registry.json (default: skill dir)")
+    ap.add_argument("--capsule-id", default=None, help="TARGET capsule id")
     ap.add_argument("--monitor-capsule-id", default=crc.DEFAULT_MONITOR_CAPSULE_ID)
     ap.add_argument("--items-file", required=True, help="txt (one per line) or .csv")
     ap.add_argument("--column", default="session")
     ap.add_argument("--include-col", default=None)
     ap.add_argument("--include-val", default=None)
     ap.add_argument("--process-name-suffix", default=None,
-                    help="capture name suffix; if omitted and --capsule is given, taken from the registry "
-                         "(else defaults to 'processed')")
+                    help="capture name suffix (defaults to 'processed')")
     ap.add_argument("--tag", action="append")
     ap.add_argument("--extra-asset", action="append",
                     help="extra fixed data asset attached to every run ('id[:mount]' or 'name[:mount]'); "
@@ -363,11 +359,10 @@ def main():
                          "exit_code/has_results check (state/end_status alone are unreliable).")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
-    crc.apply_registry(args)   # --capsule <name|id> -> fill capsule-id + suffix (process_name_suffix) + tags
     if not getattr(args, "process_name_suffix", None):
-        args.process_name_suffix = "processed"   # argparse default, restored if registry set None
+        args.process_name_suffix = "processed"   # default
     if not args.capsule_id:
-        sys.exit("ERROR: provide --capsule <name|id> (registry) or --capsule-id <id>.")
+        sys.exit("ERROR: provide --capsule-id <id>.")
     args._extra_asset_map = json.load(open(args.extra_asset_map)) if args.extra_asset_map else {}
     if args._extra_asset_map:
         print(f"extra-asset-map: per-item extra asset for {len(args._extra_asset_map)} items", flush=True)
