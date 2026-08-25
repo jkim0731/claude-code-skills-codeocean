@@ -5,7 +5,7 @@ description: Search, attach, and detach Code Ocean data assets. Use when asked t
 
 # codeocean-data-assets
 
-Manage Code Ocean **data assets** for the current session: **search**, **attach** (mount into `/data`), **detach**. Attach/detach act on the **current computation** (`$CO_COMPUTATION_ID`) via `computations.attach_data_assets` / `detach_data_assets`, so an attached asset appears under `/data` **immediately** — it's an S3 symlink, **no capsule restart**. Search + attach mirror `lamf_analysis/code_ocean/code_ocean_utils.py`; detach is added.
+Manage Code Ocean **data assets** for the current session: **search**, **attach** (mount into `/data`), **detach**. Attach/detach act on the **current computation** (`$CO_COMPUTATION_ID`) via `computations.attach_data_assets` / `detach_data_assets`, so an attached asset appears under `/data` **immediately** — it's an S3 symlink, **no capsule restart**. detach is added.
 
 Only needs `pip install codeocean` + a token in `$API_SECRET`/`$CODEOCEAN_TOKEN` (also `$CO_TOKEN`/`$CUSTOM_KEY`); domain defaults to `codeocean.allenneuraldynamics.org`.
 

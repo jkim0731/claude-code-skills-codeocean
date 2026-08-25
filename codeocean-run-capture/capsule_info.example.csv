@@ -1,0 +1,10 @@
+capsule name,capsule id,Type,suffix,result tags,required data type,pre-attached data asset name,Note
+LP Eye Tracking,550e8400-e29b-41d4-a716-446655440000,capsule,lp-eye,lp-eye;derived;eye-tracking,multiplane-ophys,lightningPose-eye-model_v2,Extract eye tracking from 2P recording
+ROICaT,6ba7b810-9dad-11d1-80b4-00c04fd430c8,capsule,rorcat,rorcat;derived;roi-matching,multiplane-ophys_processed,rorcat-model_v3,Cross-session ROI matching
+DLC Eye Tracking,7cd15924-3e8c-4f2a-91c5-1b7d8ef52a9c,capsule,dlc-eye,dlc-eye;derived;eye-tracking,multiplane-ophys,deeplabcut-eye-model_v2,DeepLabCut eye tracking
+Spike Sorting,8de26a35-4f9d-5g3b-a2d6-2c8e9fg63b0d,capsule,sorted,sorted;derived;neural,multiplane-ophys_processed,,Kilosort spike sorting pipeline
+Cortical Zstack Registration,9ef37b46-5gae-6h4c-b3e7-3d9f0gh74c1e,capsule,cortical-zstack-registration,cortical-zstack-registration;derived;registration,,Reference atlas required,Register cortical imaging to reference atlas
+Motion Correction,50a48c57-6hbf-7i5d-c4f8-4eag1hi85d2f,capsule,motion-corrected,motion-corrected;derived;preprocessing,multiplane-ophys,,Correct for motion artifacts
+Neural Activity Decoder,61b59d68-7icg-8j6e-d5g9-5fbh2ij96e3g,pipeline,decoded,decoded;derived;decoding,multiplane-ophys_processed;behavior,,Decode behavior from neural activity
+Pupil Tracking,72c6ae79-8jdh-9k7f-e6h0-6gci3jk07f4h,capsule,pupil,pupil;derived;pupil,multiplane-ophys,,Track pupil diameter
+Whisker Tracking,83d7bf8a-9kei-0l8g-f7i1-7hdj4kl18g5i,capsule,whisker,whisker;derived;whisker,multiplane-ophys,,Track whisker motion

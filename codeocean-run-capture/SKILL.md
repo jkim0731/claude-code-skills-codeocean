@@ -189,9 +189,17 @@ If your team maintains a capsule info spreadsheet (e.g., `CO_capsule_infos_*.xls
 ```bash
 # Convert your XLSX → .co-registry.json (one-time setup)
 python scripts/build_registry.py /path/to/CO_capsule_infos_*.xlsx .co-registry.json
+```
 
-# The registry file is auto-added to .gitignore (not tracked in git)
-# Regenerate it whenever your XLSX updates:
+See [capsule_info.example.csv](capsule_info.example.csv) for the required columns and format.
+
+The `.co-registry.json` file is **not tracked in git** (see `.gitignore`). It's auto-generated from your XLSX.
+
+### Regenerate when XLSX updates
+
+When your team updates `CO_capsule_infos_*.xlsx`:
+
+```bash
 git pull
 python scripts/build_registry.py /path/to/CO_capsule_infos_*.xlsx .co-registry.json
 ```

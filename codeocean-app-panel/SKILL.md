@@ -27,7 +27,7 @@ So **every user-facing panel parameter must correspond to an argparse argument i
 ## Validate (do this after any panel or argparse edit)
 
 ```bash
-python scripts/check_app_panel.py <capsule_dir>          # default: /lightningPose-eye-tracking
+python scripts/check_app_panel.py <capsule_dir>
 python scripts/check_app_panel.py <capsule_dir> --json   # machine-readable; exit 1 on mismatch
 ```
 
@@ -48,23 +48,7 @@ argparse flags not exposed in the panel (often intentional, e.g. `--output_dir`)
    `default_value`/`value_type`; pull the updated file.
 3. Run the checker; it should print ✅.
 
-## LP eye-tracking capsule — current parameters
-
-`configure_pupil_qc_from_args()` in `run_capsule.py` (defaults from `utils.py`):
-
-| panel param / arg key            | argparse flag                       | utils constant / env var             | default | range     |
-|----------------------------------|-------------------------------------|--------------------------------------|---------|-----------|
-| `pupil-eye-inflation`            | `--pupil-eye-inflation`             | `PUPIL_EYE_INFLATION`                | 1.10    | 1–2       |
-| `pupil-regularity-2nd-worst-deg` | `--pupil-regularity-2nd-worst-deg`  | `PUPIL_REGULARITY_2ND_WORST_DEG`     | 25.0    | 0–360     |
-| `pupil-containment-min`          | `--pupil-containment-min`           | `PUPIL_CONTAINMENT_MIN`              | 0.90    | 0–1       |
-
-This panel uses the name-as-key shape (`name` `pupil-eye-inflation` ↔
-`--pupil-eye-inflation`); all three keys and defaults match argparse — the checker
-reports ✅.
-
 ## Notes
 - CO sends parameter values as strings; argparse `type=float`/`int` converts them.
 - Ranges (`minimum`/`maximum`) are UI-only — argparse does not clamp; validate in code if needed.
 - Edit the panel in the CO UI (valid schema), pull, then run the checker — don't hand-author `app-panel.json`.
-- Related skills: **codeocean-run-capture** (run capsule + capture results),
-  **codeocean-data-assets** (attach/detach/search assets).
