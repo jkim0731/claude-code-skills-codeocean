@@ -310,14 +310,27 @@ def parse_kv(items):
     return out
 
 
-def parse_data_asset(spec):
-    """'id:mount' or 'id' -> DataAssetsRunParam"""
+def parse_data_asset(spec, client=None):
+    """'id:mount' or 'id' -> DataAssetsRunParam
+
+    When no mount is provided and client is available, looks up the asset by ID to
+    auto-fill mount from its name — the CO API rejects data assets with mount=None.
+    """
     from codeocean.computation import DataAssetsRunParam
     if ":" in spec:
         asset_id, mount = spec.split(":", 1)
     else:
         asset_id, mount = spec, None
-    return DataAssetsRunParam(id=asset_id.strip(), mount=(mount.strip() if mount else None))
+    asset_id = asset_id.strip()
+    mount = mount.strip() if mount else None
+    if mount is None and client is not None:
+        try:
+            asset = client.data_assets.get_data_asset(asset_id)
+            mount = asset.name
+            print(f"  resolved {asset_id!r} -> mount={mount!r}", file=sys.stderr)
+        except Exception as e:
+            print(f"  WARNING: could not resolve mount for asset {asset_id!r}: {e}", file=sys.stderr)
+    return DataAssetsRunParam(id=asset_id, mount=mount)
 
 
 def resolve_asset_name(client, spec):
@@ -538,6 +551,65 @@ def verify_applied_params(client, comp_id, intended):
 
 
 # ── subcommands ─────────────────────────────────────────────────────────────────────
+def cmd_rename_from_dd(args):
+    """Rename a captured asset to match the name in its data_description.json.
+
+    The pipeline-monitor validates the data_description.json name against
+    DataRegex.DERIVED before using it.  That regex requires the input portion of
+    the name to end with _YYYY-MM-DD_HH-MM-SS.  Capsules that process data whose
+    session names have only a date component (_YYYY-MM-DD) — such as the
+    s3-workaround cortical-zstack capsules — always fail this check, so the
+    monitor falls back to '<full_input_name>_processed_<ts>' instead.
+
+    This command is the fix for that exception: read data_description.json from
+    the asset, compare the 'name' field to the current asset name, and rename if
+    they differ.  Use it after any monitor-captured segmentation (or other result)
+    from the s3-workaround capsule family.
+    """
+    import requests as _req
+
+    client = get_client(args)
+    domain = args.domain or os.environ.get("CODEOCEAN_DOMAIN", "https://codeocean.allenneuraldynamics.org")
+
+    asset_id = args.asset_id
+    asset = client.data_assets.get_data_asset(asset_id)
+    current_name = asset.name
+    print(f"Asset: {asset_id}")
+    print(f"  current name: {current_name}")
+
+    # Download data_description.json via presigned URL
+    resp = client.session.get(f"{domain}/api/v1/data_assets/{asset_id}/files/download_url",
+                               params={"path": "data_description.json"})
+    if resp.status_code != 200:
+        sys.exit(f"ERROR: could not get download URL for data_description.json: {resp.status_code} {resp.text[:200]}")
+    url = resp.json().get("url")
+    if not url:
+        sys.exit("ERROR: no url in response")
+
+    dd = _req.get(url)
+    if dd.status_code != 200:
+        sys.exit(f"ERROR: could not download data_description.json: {dd.status_code}")
+    dd_name = dd.json().get("name")
+    if not dd_name:
+        sys.exit("ERROR: 'name' field missing from data_description.json")
+
+    print(f"  data_description.json name: {dd_name}")
+
+    if current_name == dd_name:
+        print("  names match — no rename needed")
+        return
+
+    if args.dry_run:
+        print(f"  [dry-run] would rename to: {dd_name}")
+        return
+
+    rename_resp = client.session.put(f"{domain}/api/v1/data_assets/{asset_id}", json={"name": dd_name})
+    if rename_resp.status_code == 200:
+        print(f"  renamed to: {rename_resp.json().get('name')}")
+    else:
+        sys.exit(f"ERROR: rename failed: {rename_resp.status_code} {rename_resp.text[:200]}")
+
+
 def cmd_describe_params(args):
     """Inspect a capsule/pipeline's parameter configuration and print how to pass params."""
     from pathlib import Path as PathlibPath
@@ -604,7 +676,7 @@ def cmd_run(args):
         sys.exit("ERROR: provide --capsule-id <id> or --pipeline-id <id>.")
     client = get_client(args)
 
-    data_assets = [parse_data_asset(s) for s in (args.data_asset or [])]
+    data_assets = [parse_data_asset(s, client) for s in (args.data_asset or [])]
     data_assets += [resolve_asset_name(client, s) for s in (args.data_asset_name or [])]
 
     # detect capsule-vs-pipeline and route parameters into the correct RunParams field
@@ -647,7 +719,10 @@ def cmd_run(args):
             print(f"  captured name: server-side at CAPTURE time "
                   f"(<base>_{args.process_name_suffix}_<capture-ts>)")
         else:
-            sys.exit("ERROR: --monitor requires --result-name or --process-name-suffix")
+            # No naming hint given — let the monitor use the capsule's own data_description.json
+            # name exclusively (no suffix appended). Use this when the capsule writes its own
+            # data_description.json so the name isn't doubled by the monitor.
+            print("  captured name: from capsule's data_description.json (no suffix)")
         payload = build_monitor_json(tid, data_assets, capture, run_extra)
         if len(payload) > MAX_PARAM_LEN:
             sys.exit(f"ERROR: monitor JSON is {len(payload)} chars > {MAX_PARAM_LEN} limit — "
@@ -818,6 +893,21 @@ def build_parser():
     f.add_argument("--name", required=True)
     f.add_argument("--limit", type=int, default=25)
     f.set_defaults(func=cmd_find_asset)
+
+    rdd = sub.add_parser(
+        "rename-from-dd",
+        help=(
+            "Rename a captured data asset to match the name in its data_description.json. "
+            "For capsules (e.g. s3-workaround) whose session names lack a time component "
+            "(_YYYY-MM-DD only, not _YYYY-MM-DD_HH-MM-SS), the pipeline-monitor cannot "
+            "validate the data_description.json name against DataRegex.DERIVED and falls "
+            "back to '<input>_processed_<ts>'. Run this command after capture to fix it."
+        ),
+    )
+    add_common_auth(rdd)
+    rdd.add_argument("--asset-id", required=True, help="ID of the captured data asset to rename")
+    rdd.add_argument("--dry-run", action="store_true", help="print what would be renamed without doing it")
+    rdd.set_defaults(func=cmd_rename_from_dd)
 
     d = sub.add_parser("describe-params",
                        help="inspect a capsule/pipeline's parameter configuration (flat vs named) + how to pass params")

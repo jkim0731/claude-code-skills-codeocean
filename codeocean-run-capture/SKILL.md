@@ -15,7 +15,7 @@ Captured assets follow the Allen Institute / Neural Dynamics naming pattern:
 
 Example: `multiplane-ophys_779891_2025-03-21_14-14-28_lp-eye_2025-04-01_10-00-00`
 
-The workflow suffix (e.g., `lp-eye`, `rorcat`) tells you what processing was done.
+The workflow suffix (e.g., `lp-eye`, `roicat`) tells you what processing was done.
 Use a registry to standardize these across your team.
 
 ## Default behavior
