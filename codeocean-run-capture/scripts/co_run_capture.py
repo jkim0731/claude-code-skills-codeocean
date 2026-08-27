@@ -414,7 +414,10 @@ def build_monitor_json(target_capsule_id, data_assets, capture, run_extra):
             run_params=RunParams(capsule_id=target_capsule_id, data_assets=data_assets or None, **run_extra),
             capture_settings=CaptureSettings(**capture),
         )
-        return settings.model_dump_json(exclude_none=True)
+        # CaptureSettings supplies defaults such as process_name_suffix="processed".
+        # Do not serialize defaults that the caller did not request: capsules that
+        # write data_description.json must remain authoritative for capture naming.
+        return settings.model_dump_json(exclude_none=True, exclude_defaults=True)
     except ImportError:
         run_params = {"capsule_id": target_capsule_id}
         if data_assets:
@@ -722,7 +725,7 @@ def cmd_run(args):
             # No naming hint given — let the monitor use the capsule's own data_description.json
             # name exclusively (no suffix appended). Use this when the capsule writes its own
             # data_description.json so the name isn't doubled by the monitor.
-            print("  captured name: from capsule's data_description.json (no suffix)")
+            print("  captured name: capsule data_description.json (authoritative; no suffix)")
         payload = build_monitor_json(tid, data_assets, capture, run_extra)
         if len(payload) > MAX_PARAM_LEN:
             sys.exit(f"ERROR: monitor JSON is {len(payload)} chars > {MAX_PARAM_LEN} limit — "
