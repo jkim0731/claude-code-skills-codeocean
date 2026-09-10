@@ -264,12 +264,13 @@ def submit(client, args, item):
     for ea in (getattr(args, "extra_asset", None) or []):
         eid, emount, _ = resolve(client, ea)
         da.append(DataAssetsRunParam(id=eid, mount=emount))
-    # per-item extra asset (e.g. the raw session for this item, so a QC-only run can
-    # regenerate the video-frame QC plots) — from --extra-asset-map {item: asset_id}
+    # per-item extra assets — from --extra-asset-map {item: asset_id | [asset_id, ...]}
     _emap = getattr(args, "_extra_asset_map", None) or {}
     if item in _emap:
-        eid, emount, _ = resolve(client, _emap[item])
-        da.append(DataAssetsRunParam(id=eid, mount=emount))
+        extras = _emap[item] if isinstance(_emap[item], list) else [_emap[item]]
+        for ea in extras:
+            eid, emount, _ = resolve(client, ea)
+            da.append(DataAssetsRunParam(id=eid, mount=emount))
     tags = list(args.tag or [])
     meta = crc.parse_kv(args.meta) if getattr(args, "meta", None) else {}
     # per-item subject tag + "subject id" metadata, derived from a
