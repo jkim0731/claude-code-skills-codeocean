@@ -184,11 +184,11 @@ A **registry** is an optional JSON file (`.co-registry.json`) that maps friendly
 
 ### Generate a registry from your XLSX capsule info
 
-If your team maintains a capsule info spreadsheet (e.g., `CO_capsule_infos_*.xlsx`):
+If your team maintains a capsule info spreadsheet (e.g., `CO_capsule_infos*.xlsx`):
 
 ```bash
 # Convert your XLSX → .co-registry.json (one-time setup)
-python scripts/build_registry.py /path/to/CO_capsule_infos_*.xlsx .co-registry.json
+python scripts/build_registry.py /path/to/CO_capsule_infos*.xlsx .co-registry.json
 ```
 
 See [capsule_info.example.csv](capsule_info.example.csv) for the required columns and format.
@@ -197,11 +197,11 @@ The `.co-registry.json` file is **not tracked in git** (see `.gitignore`). It's 
 
 ### Regenerate when XLSX updates
 
-When your team updates `CO_capsule_infos_*.xlsx`:
+When your team updates `CO_capsule_infos*.xlsx`:
 
 ```bash
 git pull
-python scripts/build_registry.py /path/to/CO_capsule_infos_*.xlsx .co-registry.json
+python scripts/build_registry.py /path/to/CO_capsule_infos*.xlsx .co-registry.json
 ```
 
 ### Use the registry in commands
