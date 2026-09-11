@@ -396,16 +396,22 @@ def do_capture(client, computation_id, args):
     return asset
 
 
-def build_monitor_json(target_capsule_id, data_assets, capture, run_extra):
+def build_monitor_json(target_capsule_id, data_assets, capture, run_extra, explicit_mount_ids=None):
     """Return a compact PipelineMonitorSettings JSON string for the monitor capsule.
 
     Mirrors the aind pipeline-monitor pattern: {run_params, capture_settings}.
-    - data_assets: list[DataAssetsRunParam] (mount omitted where None)
+    - data_assets: list[DataAssetsRunParam]
     - capture: dict of CaptureSettings fields (name/tags/custom_metadata/process_name_suffix/...)
     - run_extra: dict of extra RunParams fields (version/parameters)
+    - explicit_mount_ids: set of asset IDs whose mount was explicitly specified by the caller
+      (e.g. --data-asset <id>:<custom_mount>); those mounts are preserved in the payload.
+      Auto-filled mounts (== asset name) are dropped to save payload space — CO uses the
+      asset's own mount field as default, which equals its name for all processed assets.
     Uses the aind models when available (authoritative); otherwise builds the dict
     by hand so the tool still works with only `codeocean` installed.
     """
+    explicit_mount_ids = explicit_mount_ids or set()
+    caller_keys = set(capture)  # keys explicitly set by the caller
     capture = {k: v for k, v in capture.items() if v not in (None, "", [], {})}
     try:
         from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings, CaptureSettings
@@ -414,15 +420,38 @@ def build_monitor_json(target_capsule_id, data_assets, capture, run_extra):
             run_params=RunParams(capsule_id=target_capsule_id, data_assets=data_assets or None, **run_extra),
             capture_settings=CaptureSettings(**capture),
         )
-        # CaptureSettings supplies defaults such as process_name_suffix="processed".
-        # Do not serialize defaults that the caller did not request: capsules that
-        # write data_description.json must remain authoritative for capture naming.
-        return settings.model_dump_json(exclude_none=True, exclude_defaults=True)
+        # exclude_defaults strips fields the caller left at their CaptureSettings default
+        # (e.g. process_name_suffix="processed", permissions=everyone:viewer).  But the
+        # monitor re-applies those defaults when it deserializes — so fields the caller
+        # intentionally omitted must be explicitly nulled in the payload, not merely absent.
+        d = json.loads(settings.model_dump_json(exclude_none=True, exclude_defaults=True))
+        # Drop auto-filled mounts (saves ~84 chars/asset); keep explicit ones.
+        for da in d.get("run_params", {}).get("data_assets", []):
+            if da.get("id") not in explicit_mount_ids:
+                da.pop("mount", None)
+        cs = d.setdefault("capture_settings", {})
+        # process_name_suffix: null → monitor reads name from data_description.json instead
+        # of appending "_processed_<ts>" to the first input asset name.
+        if "process_name_suffix" not in caller_keys:
+            cs["process_name_suffix"] = None
+        # permissions default is everyone=viewer in CaptureSettings but gets stripped by
+        # exclude_defaults; keep it explicit so the monitor actually shares the asset.
+        if "permissions" not in caller_keys and "permissions" not in cs:
+            cs["permissions"] = {"everyone": "viewer"}
+        return json.dumps(d, separators=(",", ":"))
     except ImportError:
         run_params = {"capsule_id": target_capsule_id}
         if data_assets:
-            run_params["data_assets"] = [d.model_dump(exclude_none=True) for d in data_assets]
+            run_params["data_assets"] = [
+                {k: v for k, v in da.model_dump(exclude_none=True).items()
+                 if k != "mount" or da.id in explicit_mount_ids}
+                for da in data_assets
+            ]
         run_params.update(run_extra)
+        if "process_name_suffix" not in caller_keys:
+            capture["process_name_suffix"] = None
+        if "permissions" not in caller_keys:
+            capture.setdefault("permissions", {"everyone": "viewer"})
         return json.dumps({"run_params": run_params, "capture_settings": capture}, separators=(",", ":"))
 
 
@@ -679,8 +708,20 @@ def cmd_run(args):
         sys.exit("ERROR: provide --capsule-id <id> or --pipeline-id <id>.")
     client = get_client(args)
 
-    data_assets = [parse_data_asset(s, client) for s in (args.data_asset or [])]
-    data_assets += [resolve_asset_name(client, s) for s in (args.data_asset_name or [])]
+    # Track which asset IDs have an explicit mount (id:custom_mount or name:custom_mount),
+    # so the monitor payload preserves them while dropping auto-filled mounts.
+    explicit_mount_ids = set()
+    data_assets = []
+    for s in (args.data_asset or []):
+        da = parse_data_asset(s, client)
+        if ":" in s:
+            explicit_mount_ids.add(da.id)
+        data_assets.append(da)
+    for s in (args.data_asset_name or []):
+        da = resolve_asset_name(client, s)
+        if ":" in s:
+            explicit_mount_ids.add(da.id)
+        data_assets.append(da)
 
     # detect capsule-vs-pipeline and route parameters into the correct RunParams field
     # (pipelines silently IGNORE flat positional parameters — they need NAMED ones).
@@ -726,7 +767,7 @@ def cmd_run(args):
             # name exclusively (no suffix appended). Use this when the capsule writes its own
             # data_description.json so the name isn't doubled by the monitor.
             print("  captured name: capsule data_description.json (authoritative; no suffix)")
-        payload = build_monitor_json(tid, data_assets, capture, run_extra)
+        payload = build_monitor_json(tid, data_assets, capture, run_extra, explicit_mount_ids)
         if len(payload) > MAX_PARAM_LEN:
             sys.exit(f"ERROR: monitor JSON is {len(payload)} chars > {MAX_PARAM_LEN} limit — "
                      f"reduce tags/metadata/asset count.\n{payload}")
