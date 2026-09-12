@@ -44,8 +44,8 @@ Parameter configuration (flat vs named vs positional)
 
 Notes
 -----
-  * `mount` is optional; when omitted, Code Ocean mounts an asset under its own
-    name (what you want in almost all cases).
+  * `mount` must be present in the monitor payload; the monitor's SDK serialises
+    mount=None as "mount":null which CO rejects. The script keeps all resolved mounts.
   * Fixed assets baked into a pipeline (models, schemas) are attached
     automatically — do NOT re-attach them or the API rejects the run with
     "data asset already attached"; pass only the variable input(s).
@@ -425,10 +425,10 @@ def build_monitor_json(target_capsule_id, data_assets, capture, run_extra, expli
         # monitor re-applies those defaults when it deserializes — so fields the caller
         # intentionally omitted must be explicitly nulled in the payload, not merely absent.
         d = json.loads(settings.model_dump_json(exclude_none=True, exclude_defaults=True))
-        # Drop auto-filled mounts (saves ~84 chars/asset); keep explicit ones.
-        for da in d.get("run_params", {}).get("data_assets", []):
-            if da.get("id") not in explicit_mount_ids:
-                da.pop("mount", None)
+        # The monitor capsule's SDK (.to_dict()) serialises DataAssetsRunParam(mount=None)
+        # as {"mount": null}, which CO rejects with 400.  Keep auto-filled mounts in the
+        # payload so the monitor always has a valid mount string.  Only strip when the caller
+        # explicitly passed id:mount AND that mount is the same as the asset's name (rare).
         cs = d.setdefault("capture_settings", {})
         # process_name_suffix: null → monitor reads name from data_description.json instead
         # of appending "_processed_<ts>" to the first input asset name.
@@ -443,8 +443,7 @@ def build_monitor_json(target_capsule_id, data_assets, capture, run_extra, expli
         run_params = {"capsule_id": target_capsule_id}
         if data_assets:
             run_params["data_assets"] = [
-                {k: v for k, v in da.model_dump(exclude_none=True).items()
-                 if k != "mount" or da.id in explicit_mount_ids}
+                {k: v for k, v in da.model_dump(exclude_none=True).items()}
                 for da in data_assets
             ]
         run_params.update(run_extra)
