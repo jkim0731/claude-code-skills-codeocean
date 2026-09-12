@@ -367,9 +367,9 @@ def share_everyone(client, asset_id, role="viewer"):
     """Share a captured asset with everyone — mirrors the Code Ocean UI capture default (which
     shares the result). Keeps the owner intact. role: 'viewer' (readable by all), 'discoverable'
     (searchable only), or 'none' (private). Verifiable via GET data_assets/{id}/permissions."""
-    from codeocean.components import Permissions, EveryoneRole
+    from codeocean.data_asset import Permissions
     try:
-        client.data_assets.update_permissions(asset_id, Permissions(everyone=EveryoneRole(role)))
+        client.data_assets.update_permissions(asset_id, Permissions(everyone=role))
         print(f"  shared with everyone (everyone={role})")
     except Exception as e:
         print(f"  WARNING: could not set sharing (everyone={role}): {e}")
